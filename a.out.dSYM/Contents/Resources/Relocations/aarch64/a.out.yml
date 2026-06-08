@@ -1,0 +1,14 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     a.out
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _parse, symObjAddr: 0x0, symBinAddr: 0x100003048, symSize: 0x6C }
+  - { offsetInCU: 0x4F, offset: 0x4F, size: 0x8, addend: 0x0, symName: _parse, symObjAddr: 0x0, symBinAddr: 0x100003048, symSize: 0x6C }
+  - { offsetInCU: 0x81, offset: 0x81, size: 0x8, addend: 0x0, symName: _init_instruction, symObjAddr: 0x6C, symBinAddr: 0x1000030B4, symSize: 0x3F8 }
+  - { offsetInCU: 0xC1, offset: 0xC1, size: 0x8, addend: 0x0, symName: _init_operands, symObjAddr: 0x464, symBinAddr: 0x1000034AC, symSize: 0x64 }
+  - { offsetInCU: 0x101, offset: 0x101, size: 0x8, addend: 0x0, symName: _type_check, symObjAddr: 0x4C8, symBinAddr: 0x100003510, symSize: 0x1D8 }
+  - { offsetInCU: 0x133, offset: 0x133, size: 0x8, addend: 0x0, symName: _value_check, symObjAddr: 0x6A0, symBinAddr: 0x1000036E8, symSize: 0x1C8 }
+  - { offsetInCU: 0x1C7, offset: 0x1C7, size: 0x8, addend: 0x0, symName: _encode_instruction, symObjAddr: 0x868, symBinAddr: 0x1000038B0, symSize: 0x3BC }
+  - { offsetInCU: 0x26, offset: 0x2F2, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003CB8, symSize: 0x19C }
+  - { offsetInCU: 0x42, offset: 0x30E, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003CB8, symSize: 0x19C }
+...
