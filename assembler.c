@@ -14,6 +14,7 @@ void init_instruction(PARSED_LINE *parsed, INSTRUCTION *instruction){
     // init instruction txt field
     instruction->txt = parsed->instruction;
     char *tmp = instruction->txt;
+    instruction->subcode = -1;
 
     // init instruction_type field
     if(strcmp(tmp, "neg") == 0){
@@ -164,17 +165,21 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
     switch(instruction->type){
     
         case INST_NEG:
+            instruction->subcode = 0;
             return "0";
 
         case INST_BNOT:
+            instruction->subcode = 1;
             return "0";
 
         case INST_LNOT:
+            instruction->subcode = 2;
             return "0";
 
         case INST_MOV: // da big one lol
 
             if(source->type == PC && destination->type == REGISTER){
+                instruction->subcode = 3;
                 return "0";
             }
             else if(source->type == REGISTER && destination->type == REGISTER){
@@ -187,9 +192,11 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 return "B";
             }
             else if(source->type == IMMEDIATE && destination->type == REGISTER){
+                instruction->subcode = 0;
                 return "C";
             }
             else if(source->type == MEM_IMMEDIATE && destination->type == REGISTER){
+                instruction->subcode = 3;
                 return "C";
             }
 
@@ -201,6 +208,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                     return "2";
 
                 case IMMEDIATE:
+                    instruction->subcode = 1;
                     return "C";
                 default:
                     return "F";
@@ -226,6 +234,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                     return "7";
 
                 case IMMEDIATE:
+                    instruction->subcode = 2;
                     return "C";
                 default:
                 return "F";
@@ -241,15 +250,19 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
             return "D";
 
         case INST_PUSH:
+            instruction->subcode = 0;
             return "E";
 
         case INST_POP:
+            instruction->subcode = 1;
             return "E";
             
         case INST_CALL:
+            instruction->subcode = 2;
             return "E";
 
         case INST_RET:
+            instruction->subcode = 3;
             return "E";
 
         case INST_HALT:
@@ -265,27 +278,61 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 }
 
 // convert operands to nibble
-char *encode_operands(OPERAND *source, OPERAND *destination){
+char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination){
 
-    if(source->type == REGISTER && destination->type == REGISTER){
-        uint8_t nibble = (u_int8_t) (destination->value * 4 + source->value);
-        
+    if(source->type == REGISTER && destination->type == REGISTER){  // 2 registers
+
+        char hex[] = "0123456789ABCDEF"; 
+        uint8_t nibble = (uint8_t) (destination->value * 4 + source->value);
+
+        static char result[2];
+        result[0] = hex[nibble];
+        result[1] = '\0';
+
+        return result;  // eventually change to write directly to stdout
     }
 
-    else if(source->type != REGISTER && destination->type == REGISTER){
+    else if(source->type == REGISTER && destination->type != REGISTER && instruction->subcode >= 0){    // 1 register
     
+        // need to fix this
 
-        char *nibble = destination->value * 4 || 0x0F;
+        char hex[] = "0123456789ABCDEF"; 
+        uint8_t nibble = (uint8_t) (source->value * 4 + instruction->subcode);
 
+        static char result[2];
+        result[0] = hex[nibble];
+        result[1] = '\0';
 
+        return result;  // eventually change to write directly to stdout
     }
 
     else if(source->type != REGISTER && destination->type != REGISTER){
-        return "F";
+        return "F"; // for non-register instructions (call, ret, ect), last nibble is irrelevant
     }
 
 }
 
+/*
+
+icode 0x0:
+  neg
+  bnot
+  lnot
+  mov pc, rA
+
+icode 0xC:
+  mov immediate
+  add immediate
+  and immediate
+  mov memory-immediate
+
+icode 0xE:
+  push
+  pop
+  call
+  ret
+
+*/
 
 
 
