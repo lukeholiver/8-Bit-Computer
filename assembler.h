@@ -68,4 +68,6 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 
 char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination);
 
+char *encode_immediate(OPERAND *source);
+
 #endif

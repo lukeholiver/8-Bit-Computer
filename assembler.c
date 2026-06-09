@@ -199,6 +199,9 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 instruction->subcode = 3;
                 return "C";
             }
+            else{
+                return "F";
+            }
 
         case INST_ADD:
 
@@ -280,36 +283,40 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 // convert operands to nibble
 char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination){
 
+    int rA = 0;
+    int rB = 0;
+
     if(source->type == REGISTER && destination->type == REGISTER){  // 2 registers
-
-        char hex[] = "0123456789ABCDEF"; 
-        uint8_t nibble = (uint8_t) (destination->value * 4 + source->value);
-
-        static char result[2];
-        result[0] = hex[nibble];
-        result[1] = '\0';
-
-        return result;  // eventually change to write directly to stdout
+        rA = destination->value;
+        rB = source->value;
+    }
+    else if(source->type == REGISTER && instruction->subcode >= 0){    // 1 register
+        rA = source->value;
+        rB = instruction->subcode;
+    }
+    else if(destination->type == REGISTER && instruction->subcode >= 0){    // 1 register
+        rA = destination->value;
+        rB = instruction->subcode;
+    }
+    else{
+        return "F";
     }
 
-    else if(source->type == REGISTER && destination->type != REGISTER && instruction->subcode >= 0){    // 1 register
-    
-        // need to fix this
+    char hex[] = "0123456789ABCDEF"; 
+    uint8_t nibble = (uint8_t) (rA * 4 + rB);
 
-        char hex[] = "0123456789ABCDEF"; 
-        uint8_t nibble = (uint8_t) (source->value * 4 + instruction->subcode);
+    char result[2];
+    result[0] = hex[nibble];
+    result[1] = '\0';
 
-        static char result[2];
-        result[0] = hex[nibble];
-        result[1] = '\0';
+    return result;
+}
 
-        return result;  // eventually change to write directly to stdout
+char *encode_immediate(OPERAND *source){
+
+    if(source->type == IMMEDIATE || source->type == MEM_IMMEDIATE){
+        // TODO
     }
-
-    else if(source->type != REGISTER && destination->type != REGISTER){
-        return "F"; // for non-register instructions (call, ret, ect), last nibble is irrelevant
-    }
-
 }
 
 /*
