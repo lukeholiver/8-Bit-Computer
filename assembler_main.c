@@ -17,6 +17,7 @@ int main(int argc, char *argv[]){
 
     // Variables
     char line[256] = {0};
+    char line_copy[256];
     char ops_buff[2];
     char imm_buff[3];
 
@@ -28,8 +29,12 @@ int main(int argc, char *argv[]){
     // read line by line
     while(fgets(line, sizeof(line), file_ptr)){
 
+        // copy line string
+        strncpy(line_copy, line, sizeof(line_copy));
+        line_copy[255] = '\0';
+
         // parse line into tokens
-        parse(line, &parsed);
+        parse(line_copy, &parsed);
         
         // init instruction struct
         init_instruction(&parsed, &instruction);
