@@ -1,0 +1,13 @@
+# compiled binaries
+a.out
+assembler
+simulator
+
+# object files
+*.o
+
+# macOS debug symbols
+*.dSYM/
+
+# macOS metadata
+.DS_Store
