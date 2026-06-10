@@ -1,5 +1,8 @@
 #include "assembler.h"
 
+// error flag bool
+bool error_flag = false;
+
 // splits an assembly line into tokens
 void parse(char *line, PARSED_LINE *parsed){
 
@@ -88,6 +91,7 @@ void init_instruction(PARSED_LINE *parsed, INSTRUCTION *instruction){
     }
     else{
         instruction->type = INST_INVALID;
+        error_flag = true;
     }
 }
 
@@ -154,6 +158,7 @@ void value_check(OPERAND *operand){
         operand->value = (int) strtol(num_value, NULL, 16);
         if(operand->value < 0 || operand->value > 3){
             operand->type = INVALID;
+            error_flag = true;
         }
     }
     else if(operand->type == IMMEDIATE){    // $10
@@ -165,6 +170,7 @@ void value_check(OPERAND *operand){
         operand->value = (int) strtol(num_value, NULL, 16);
         if(operand->value < 0 || operand->value > 3){
             operand->type = INVALID;
+            error_flag = true;
         }
     }
     else if(operand->type == MEM_IMMEDIATE){   // ($10)
@@ -190,7 +196,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
             instruction->subcode = 2;
             return "0";
 
-        case INST_MOV: // da big one lol
+        case INST_MOV:
 
             if(source->type == PC && destination->type == REGISTER){
                 instruction->subcode = 3;
@@ -213,7 +219,8 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 instruction->subcode = 3;
                 return "C";
             }
-            else{
+            else{   // error detected
+                error_flag = true;
                 return "F";
             }
 
@@ -227,7 +234,8 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 case IMMEDIATE:
                     instruction->subcode = 1;
                     return "C";
-                default:
+                default:    // error detected
+                    error_flag = true;
                     return "F";
             }
 
@@ -253,8 +261,9 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 case IMMEDIATE:
                     instruction->subcode = 2;
                     return "C";
-                default:
-                return "F";
+                default:    // error detected
+                    error_flag = true;
+                    return "F";
             }
             
         case INST_OR:
@@ -288,9 +297,9 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
         case INST_INVALID: // invalid instruction stops program
             return "F";
 
-        default:
+        default:    // error detected
+            error_flag = true;
             return "F";
-
     }
 }
 
@@ -338,6 +347,10 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
 
     // halt
     else{
+        // check for instructions with no operands
+        if(instruction->type != INST_HALT && instruction->type != INST_RET){
+            error_flag = true;
+        }
         rA = 3; // with rA = rB = 3, nibble will evaluate to F
         rB = 3;
     }
@@ -355,9 +368,13 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
 void encode_immediate(OPERAND *source, char *buff){
 
     if(source->type == IMMEDIATE || source->type == MEM_IMMEDIATE){
-        uint8_t nibble = source->value; // still need to check if the immedaite is 0 <= x= <255
-        snprintf(buff, 3, "%02X", source->value);
-        return;
+            if(source->value >= 0 && source->value <= 255){
+                snprintf(buff, 3, "%02X", source->value);
+            }
+            else{
+                error_flag = true;
+                buff[0] = '\0';
+            }
     }
     else{
         buff[0] = '\0';

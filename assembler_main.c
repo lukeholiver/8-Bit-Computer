@@ -11,7 +11,7 @@ int main(int argc, char *argv[]){
     // open file
     FILE *file_ptr = fopen(argv[1], "r");
     if(file_ptr == NULL){
-        printf("File failed to open");
+        printf("File failed to open\n");
         return 1;
     }
 
@@ -20,6 +20,7 @@ int main(int argc, char *argv[]){
     char line_copy[256];
     char ops_buff[2];
     char imm_buff[3];
+    int line_num = 0;
 
     PARSED_LINE parsed;
     INSTRUCTION instruction;
@@ -28,6 +29,9 @@ int main(int argc, char *argv[]){
 
     // read line by line
     while(fgets(line, sizeof(line), file_ptr)){
+
+        // increment line number
+        line_num++;
 
         // copy line string
         strncpy(line_copy, line, sizeof(line_copy));
@@ -46,6 +50,12 @@ int main(int argc, char *argv[]){
         char *inst_nibble = encode_instruction(&instruction, &source, &destination); // safe returning literals
         encode_operands(&instruction, &source, &destination, ops_buff);
         encode_immediate(&source, imm_buff);
+
+        // error check
+        if(error_flag){
+            fprintf(stderr, "Error on line %d: %s\n", line_num, line);
+            break;
+        }
         
         // print byte(s) to stdout
         printf("%s%s%s", inst_nibble, ops_buff, imm_buff);
