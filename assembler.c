@@ -2,10 +2,25 @@
 
 // splits an assembly line into tokens
 void parse(char *line, PARSED_LINE *parsed){
+
+    line[strcspn(line, "\r\n")] = '\0';
+
     parsed->instruction = strsep(&line, " ");
+
+    if(line == NULL){   // check for zero operand instructions
+        parsed->source = NULL;
+        parsed->destination = NULL;
+        return;
+    }
+
     parsed->source = strsep(&line, ",");
-    parsed->destination = &line[1];  // index at 1 to remove space
-    // TODO, improve whitespace removal to prevent bugs
+
+    if(line == NULL){   // check for single operand instructions
+        parsed->destination = NULL;
+        return;
+    }
+
+    parsed->destination = &line[1];
 }
 
 // initializes instruction struct
@@ -73,7 +88,6 @@ void init_instruction(PARSED_LINE *parsed, INSTRUCTION *instruction){
     }
     else{
         instruction->type = INST_INVALID;
-        printf("Edge case found");
     }
 }
 
@@ -286,18 +300,43 @@ char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destin
     int rA = 0;
     int rB = 0;
 
-    if(source->type == REGISTER && destination->type == REGISTER){  // 2 registers
+    // source: register, destination: register
+    if(source->type == REGISTER && destination->type == REGISTER){
         rA = destination->value;
         rB = source->value;
     }
-    else if(source->type == REGISTER && instruction->subcode >= 0){    // 1 register
+
+    // source: mem_register, destination: register
+    else if(source->type == MEM_REGISTER && destination->type == REGISTER){
+        rA = destination->value;
+        rB = source->value;
+    }
+
+    // source: register, destination: mem_register
+    else if(source->type == REGISTER && destination->type == MEM_REGISTER){
+        rA = source->value;
+        rB = destination->value;
+    }
+
+    // source: register, subcode
+    else if(source->type == REGISTER && instruction->subcode >= 0){
         rA = source->value;
         rB = instruction->subcode;
     }
-    else if(destination->type == REGISTER && instruction->subcode >= 0){    // 1 register
+    
+    // destination: register, subcode
+    else if(destination->type == REGISTER && instruction->subcode >= 0){
         rA = destination->value;
         rB = instruction->subcode;
     }
+    
+    // no registers, subcode
+    else if(destination->type != REGISTER && source->type != REGISTER && instruction->subcode >= 0){
+        rA = 0;
+        rB = instruction->subcode;
+    }
+
+    // halt
     else{
         return "F";
     }
@@ -305,46 +344,23 @@ char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destin
     char hex[] = "0123456789ABCDEF"; 
     uint8_t nibble = (uint8_t) (rA * 4 + rB);
 
-    char result[2];
+    static char result[2];
     result[0] = hex[nibble];
     result[1] = '\0';
 
     return result;
 }
 
+// convert immediate to byte
 char *encode_immediate(OPERAND *source){
 
     if(source->type == IMMEDIATE || source->type == MEM_IMMEDIATE){
-        // TODO
+        uint8_t nibble = source->value; // still need to check if the immedaite is 0 <= x= <255
+        static char result[3];
+        snprintf(result, sizeof(result), "%02X", source->value);
+        return result;
+    }
+    else{
+        return "\0";
     }
 }
-
-/*
-
-icode 0x0:
-  neg
-  bnot
-  lnot
-  mov pc, rA
-
-icode 0xC:
-  mov immediate
-  add immediate
-  and immediate
-  mov memory-immediate
-
-icode 0xE:
-  push
-  pop
-  call
-  ret
-
-*/
-
-
-
-
-    
-
-
-

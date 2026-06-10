@@ -1,0 +1,5 @@
+mov $2a, %r0
+mov $80, %r1
+mov %r0, (%r1)
+mov (%r1), %r2
+halt
