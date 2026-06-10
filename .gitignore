@@ -5,6 +5,7 @@ simulator
 
 # object files
 *.o
+*.gch
 
 # macOS debug symbols
 *.dSYM/
