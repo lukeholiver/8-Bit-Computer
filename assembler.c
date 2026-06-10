@@ -295,7 +295,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 }
 
 // convert operands to nibble
-char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination){
+void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination, char *buff){
 
     int rA = 0;
     int rB = 0;
@@ -338,29 +338,28 @@ char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destin
 
     // halt
     else{
-        return "F";
+        rA = 3; // with rA = rB = 3, nibble will evaluate to F
+        rB = 3;
     }
 
     char hex[] = "0123456789ABCDEF"; 
     uint8_t nibble = (uint8_t) (rA * 4 + rB);
 
-    static char result[2];
-    result[0] = hex[nibble];
-    result[1] = '\0';
+    buff[0] = hex[nibble];
+    buff[1] = '\0';
 
-    return result;
+    return;
 }
 
 // convert immediate to byte
-char *encode_immediate(OPERAND *source){
+void encode_immediate(OPERAND *source, char *buff){
 
     if(source->type == IMMEDIATE || source->type == MEM_IMMEDIATE){
         uint8_t nibble = source->value; // still need to check if the immedaite is 0 <= x= <255
-        static char result[3];
-        snprintf(result, sizeof(result), "%02X", source->value);
-        return result;
+        snprintf(buff, 3, "%02X", source->value);
+        return;
     }
     else{
-        return "\0";
+        buff[0] = '\0';
     }
 }

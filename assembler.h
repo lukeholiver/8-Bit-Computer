@@ -66,8 +66,8 @@ void value_check(OPERAND *operand);
 
 char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination);
 
-char *encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination);
+void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination, char *buff);
 
-char *encode_immediate(OPERAND *source);
+void encode_immediate(OPERAND *source, char *buff);
 
 #endif

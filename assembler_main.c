@@ -17,6 +17,9 @@ int main(int argc, char *argv[]){
 
     // Variables
     char line[256] = {0};
+    char ops_buff[2];
+    char imm_buff[3];
+
     PARSED_LINE parsed;
     INSTRUCTION instruction;
     OPERAND source;
@@ -35,12 +38,12 @@ int main(int argc, char *argv[]){
         init_operands(&parsed, &source, &destination);
 
         // encode line
-        char *inst_nibble = encode_instruction(&instruction, &source, &destination);
-        char *ops_nibble = encode_operands(&instruction, &source, &destination);
-        char *imm_byte = encode_immediate(&source);
+        char *inst_nibble = encode_instruction(&instruction, &source, &destination); // safe returning literals
+        encode_operands(&instruction, &source, &destination, ops_buff);
+        encode_immediate(&source, imm_buff);
         
         // print byte(s) to stdout
-        printf("%s%s%s", inst_nibble, ops_nibble, imm_byte);
+        printf("%s%s%s", inst_nibble, ops_buff, imm_buff);
     }
 
     fclose(file_ptr);
