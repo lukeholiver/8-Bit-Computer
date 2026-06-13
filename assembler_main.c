@@ -65,3 +65,30 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
+
+
+/*
+
+first loop
+- read file line by line
+- receive line
+- parse
+- increment counter
+    +1 for regular lines
+    +2 for lines with immediates
+- if instruction == label? -> how do we check for label, maybe :
+    - need to record label and address
+
+
+
+second loop
+- read file line by line
+- parse
+- init structs
+- encode instruction
+- encode operation
+- encode immediate
+- print to stdout
+
+*/
+
