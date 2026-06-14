@@ -3,6 +3,11 @@
 // error flag bool
 bool error_flag = false;
 
+// 1st-pass-variables
+int address = 0;
+int label_index = 0;
+LABEL labels[256] = {0};
+
 // splits an assembly line into tokens
 void parse(char *line, PARSED_LINE *parsed){
 
@@ -89,6 +94,9 @@ void init_instruction(PARSED_LINE *parsed, INSTRUCTION *instruction){
     else if(strcmp(tmp, "halt") == 0){
         instruction->type = INST_HALT;
     }
+    else if(strcmp(&tmp[strlen(tmp) - 1], ":") == 0){ // check for :
+        instruction->type = INST_LABEL;
+    }
     else{
         instruction->type = INST_INVALID;
         error_flag = true;
@@ -124,12 +132,15 @@ void type_check(OPERAND *operand){
 
     if(operand->txt[0] == '%'){
         operand->type = REGISTER;
+        return;
     }
     else if(strcmp(operand->txt, "pc") == 0){
         operand->type = PC;
+        return;
     }
     else if(operand->txt[0] == '$'){
         operand->type = IMMEDIATE;
+        return;
     } 
     else if(len == 5 && 
             operand->txt[0] == '(' && 
@@ -137,23 +148,38 @@ void type_check(OPERAND *operand){
 
         if(operand->txt[1] == '%'){
            operand->type = MEM_REGISTER;
+           return;
         }
         else if(operand->txt[1] == '$'){
             operand->type = MEM_IMMEDIATE;
+            return;
         }
         else{
            operand->type = INVALID;
+           return;
         }
-    } 
-    else{
-        operand->type = INVALID;
     }
+    else{
+        for(int i = 0; i < label_index; i++){
+            if(strcmp(labels[i].txt, operand->txt) == 0){
+                operand->type = IMMEDIATE;
+                operand->value = labels[i].address;
+                return;
+            }
+        }
+    
+    }
+
+    // safety-net for unresolved labels
+    error_flag = true;
+    operand->type = LABEL_ADDR;
+
 }
 
 // determines the value of an operand
 void value_check(OPERAND *operand){
 
-    if(operand->type == REGISTER){          // %r0
+    if(operand->type == REGISTER){
         char *num_value = &operand->txt[2];
         operand->value = (int) strtol(num_value, NULL, 16);
         if(operand->value < 0 || operand->value > 3){
@@ -161,11 +187,11 @@ void value_check(OPERAND *operand){
             error_flag = true;
         }
     }
-    else if(operand->type == IMMEDIATE){    // $10
+    else if(operand->type == IMMEDIATE && operand->txt[0] == '$'){
         char *num_value = &operand->txt[1];
         operand->value = (int) strtol(num_value, NULL, 16);
-    }
-    else if(operand->type == MEM_REGISTER){    // (%r1)
+    }    
+    else if(operand->type == MEM_REGISTER){
         char *num_value = &operand->txt[3];
         operand->value = (int) strtol(num_value, NULL, 16);
         if(operand->value < 0 || operand->value > 3){
@@ -173,7 +199,7 @@ void value_check(OPERAND *operand){
             error_flag = true;
         }
     }
-    else if(operand->type == MEM_IMMEDIATE){   // ($10)
+    else if(operand->type == MEM_IMMEDIATE){
         char *num_value = &operand->txt[2];
         operand->value = (int) strtol(num_value, NULL, 16);
     }
@@ -379,4 +405,17 @@ void encode_immediate(OPERAND *source, char *buff){
     else{
         buff[0] = '\0';
     }
+}
+
+// initalizes label struct
+void init_label(INSTRUCTION *instruction){
+
+    // copy label text and remove colon
+    strncpy(labels[label_index].txt, instruction->txt, sizeof(labels[label_index].txt));
+    labels[label_index].txt[strlen(labels[label_index].txt) - 1] = '\0';
+
+    // set label address and increment index
+    labels[label_index].address = address;
+    label_index ++;
+
 }

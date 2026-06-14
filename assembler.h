@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-extern bool error_flag;
-
 typedef struct {
     char *instruction;
     char *source;
@@ -26,13 +24,19 @@ typedef struct {
     int value;
 } OPERAND;
 
+typedef struct {
+    char txt[256];
+    uint8_t address;
+} LABEL;
+
 typedef enum {
     REGISTER,       // 0
     IMMEDIATE,      // 1
     MEM_REGISTER,   // 2
     MEM_IMMEDIATE,  // 3
     PC,             // 4
-    INVALID         // 5
+    LABEL_ADDR,     // 5
+    INVALID         // 6
 } OPERAND_TYPE;
 
 typedef enum {
@@ -54,8 +58,14 @@ typedef enum {
     INST_CALL,      // 15
     INST_RET,       // 16
     INST_HALT,      // 17
-    INST_INVALID    // 18
+    INST_LABEL,     // 18
+    INST_INVALID    // 19
 } INSTRUCTION_TYPE;
+
+extern bool error_flag;
+extern int address;
+extern int label_index;
+extern LABEL labels[256];
 
 void parse(char *line, PARSED_LINE *parsed);
 
@@ -72,5 +82,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination, char *buff);
 
 void encode_immediate(OPERAND *source, char *buff);
+
+void init_label(INSTRUCTION *instruction);
 
 #endif

@@ -27,7 +27,52 @@ int main(int argc, char *argv[]){
     OPERAND source;
     OPERAND destination;
 
-    // read line by line
+    // 1st pass
+    while(fgets(line, sizeof(line), file_ptr)){
+
+        // increment line number
+        line_num++;
+    
+        // copy line string
+        strncpy(line_copy, line, sizeof(line_copy));
+        line_copy[255] = '\0';
+
+        // parse line into tokens
+        parse(line_copy, &parsed);
+        
+        // init instruction struct
+        init_instruction(&parsed, &instruction);
+
+        // init operand structs
+        init_operands(&parsed, &source, &destination);
+
+        // check for label
+        if(instruction.type == INST_LABEL){
+
+            // init label struct
+            init_label(&instruction);
+            continue;
+        }
+
+        else if(instruction.type != INST_INVALID && instruction.type != INST_LABEL){
+            if(source.type == IMMEDIATE || source.type == MEM_IMMEDIATE || source.type == LABEL_ADDR){
+                address += 2;
+            }
+            else{
+                address += 1;
+            }
+        }
+
+        fprintf(stderr, "line %d: inst=%d src_type=%d addr=%d\n", line_num, instruction.type, source.type, address);
+
+    }
+
+    // reset file pointer, line_num, and error flag
+    rewind(file_ptr);
+    line_num = 0;
+    error_flag = false;
+
+    // 2nd pass
     while(fgets(line, sizeof(line), file_ptr)){
 
         // increment line number
@@ -43,6 +88,11 @@ int main(int argc, char *argv[]){
         // init instruction struct
         init_instruction(&parsed, &instruction);
 
+        // check for label
+        if(instruction.type == INST_LABEL){
+            continue;
+        }
+
         // init operand structs
         init_operands(&parsed, &source, &destination);
 
@@ -54,7 +104,8 @@ int main(int argc, char *argv[]){
         // error check
         if(error_flag){
             fprintf(stderr, "Error on line %d: %s\n", line_num, line);
-            break;
+            fclose(file_ptr);
+            return 1;
         }
         
         // print byte(s) to stdout
@@ -65,30 +116,3 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
-
-
-/*
-
-first loop
-- read file line by line
-- receive line
-- parse
-- increment counter
-    +1 for regular lines
-    +2 for lines with immediates
-- if instruction == label? -> how do we check for label, maybe :
-    - need to record label and address
-
-
-
-second loop
-- read file line by line
-- parse
-- init structs
-- encode instruction
-- encode operation
-- encode immediate
-- print to stdout
-
-*/
-
