@@ -30,9 +30,11 @@ int main(int argc, char *argv[]){
     // 1st pass
     while(fgets(line, sizeof(line), file_ptr)){
 
-        // increment line number
-        line_num++;
-    
+        // skip if comment or empty line
+        if(line[0] == '\n' || (line[0] == '/' && line[1] == '/')){
+            continue;
+        }
+
         // copy line string
         strncpy(line_copy, line, sizeof(line_copy));
         line_copy[255] = '\0';
@@ -62,14 +64,10 @@ int main(int argc, char *argv[]){
                 address += 1;
             }
         }
-
-        fprintf(stderr, "line %d: inst=%d src_type=%d addr=%d\n", line_num, instruction.type, source.type, address);
-
     }
 
-    // reset file pointer, line_num, and error flag
+    // reset file pointer and error flag
     rewind(file_ptr);
-    line_num = 0;
     error_flag = false;
 
     // 2nd pass
@@ -77,6 +75,11 @@ int main(int argc, char *argv[]){
 
         // increment line number
         line_num++;
+
+        // skip if comment or empty line
+        if(line[0] == '\n' || (line[0] == '/' && line[1] == '/')){
+            continue;
+        }
 
         // copy line string
         strncpy(line_copy, line, sizeof(line_copy));
