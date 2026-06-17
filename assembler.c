@@ -76,14 +76,26 @@ void init_instruction(PARSED_LINE *parsed, INSTRUCTION *instruction){
     else if(strcmp(tmp, "xor") == 0){
         instruction->type = INST_XOR;
     }
-    else if(strcmp(tmp, "blez") == 0){
-        instruction->type = INST_BLEZ;
+    else if(strcmp(tmp, "jgt") == 0){
+        instruction->type = INST_JGT;
+    }
+    else if(strcmp(tmp, "jlt") == 0){
+        instruction->type = INST_JLT;
+    }
+    else if(strcmp(tmp, "je") == 0){
+        instruction->type = INST_JE;
+    }
+    else if(strcmp(tmp, "jne") == 0){
+        instruction->type = INST_JNE;
     }
     else if(strcmp(tmp, "push") == 0){
         instruction->type = INST_PUSH;
     }
     else if(strcmp(tmp, "pop") == 0){
         instruction->type = INST_POP;
+    }
+    else if(strcmp(tmp, "jmp") == 0){
+        instruction->type = INST_JMP;
     }
     else if(strcmp(tmp, "call") == 0){
         instruction->type = INST_CALL;
@@ -138,6 +150,10 @@ void type_check(OPERAND *operand){
         operand->type = PC;
         return;
     }
+    else if(strcmp(operand->txt, "rsp") == 0){
+        operand->type = RSP;
+        return;
+    }
     else if(operand->txt[0] == '$'){
         operand->type = IMMEDIATE;
         return;
@@ -167,7 +183,6 @@ void type_check(OPERAND *operand){
                 return;
             }
         }
-    
     }
 
     // safety-net for unresolved labels
@@ -222,7 +237,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
             instruction->subcode = 2;
             return "0";
 
-        case INST_MOV:
+        case INST_MOV: // need to look at
 
             if(source->type == PC && destination->type == REGISTER){
                 instruction->subcode = 3;
@@ -278,19 +293,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
             return "6";
 
         case INST_AND:
-        
-            switch(source->type){
-
-                case REGISTER:
-                    return "7";
-
-                case IMMEDIATE:
-                    instruction->subcode = 2;
-                    return "C";
-                default:    // error detected
-                    error_flag = true;
-                    return "F";
-            }
+            return "7";
             
         case INST_OR:
             return "8";
@@ -298,35 +301,65 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
         case INST_XOR:
             return "9";
             
-        case INST_BLEZ:
+        case INST_JGT:
+            instruction->subcode = 0;
             return "D";
 
+        case INST_JLT:
+            instruction->subcode = 1;
+            return "D";
+
+        case INST_JE:
+            instruction->subcode = 2;
+            return "D";
+
+        case INST_JNE:
+            instruction->subcode = 3;
+            return "D";
+    
         case INST_PUSH:
-            instruction->subcode = 0;
-            return "E";
+            
+            switch(source->type){
+
+                case REGISTER:
+                    instruction->subcode = 0;
+                    return "E";
+
+                case IMMEDIATE:
+                    instruction->subcode = 1;
+                    return "E";
+
+                default:    // error detected
+                    error_flag = true;
+                    return "F";
+            }
 
         case INST_POP:
-            instruction->subcode = 1;
-            return "E";
-            
-        case INST_CALL:
             instruction->subcode = 2;
             return "E";
 
+        case INST_JMP:
+            instruction->subcode = 0;
+            return "F";
+            
+        case INST_CALL:
+            instruction->subcode = 1;
+            return "F";
+
         case INST_RET:
-            instruction->subcode = 3;
-            return "E";
+            instruction->subcode = 2;
+            return "F";
 
         case INST_HALT:
+            instruction->subcode = 3;
             return "F";
 
         case INST_INVALID: // invalid instruction stops program
-            return "F";
+            return "F";    // error flag already set in init_instruction()
 
-        default:    // error detected
-            error_flag = true;
+        default: // so compiler doesn't have a stroke
             return "F";
-    }
+    }   
 }
 
 // convert operands to nibble
@@ -371,14 +404,14 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
         rB = instruction->subcode;
     }
 
-    // halt
+    // halt or ret
     else{
         // check for instructions with no operands
         if(instruction->type != INST_HALT && instruction->type != INST_RET){
             error_flag = true;
         }
-        rA = 3; // with rA = rB = 3, nibble will evaluate to F
-        rB = 3;
+        rA = 0;
+        rB = instruction->subcode;
     }
 
     char hex[] = "0123456789ABCDEF"; 

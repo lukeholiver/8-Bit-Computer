@@ -35,8 +35,9 @@ typedef enum {
     MEM_REGISTER,   // 2
     MEM_IMMEDIATE,  // 3
     PC,             // 4
-    LABEL_ADDR,     // 5
-    INVALID         // 6
+    RSP,            // 5
+    LABEL_ADDR,     // 6
+    INVALID         // 7
 } OPERAND_TYPE;
 
 typedef enum {
@@ -52,14 +53,18 @@ typedef enum {
     INST_AND,       // 9
     INST_OR,        // 10
     INST_XOR,       // 11
-    INST_BLEZ,      // 12
-    INST_PUSH,      // 13
-    INST_POP,       // 14
-    INST_CALL,      // 15
-    INST_RET,       // 16
-    INST_HALT,      // 17
-    INST_LABEL,     // 18
-    INST_INVALID    // 19
+    INST_JGT,       // 12
+    INST_JLT,       // 13
+    INST_JE,        // 14
+    INST_JNE,       // 15
+    INST_PUSH,      // 16
+    INST_POP,       // 17
+    INST_JMP,       // 18
+    INST_CALL,      // 19
+    INST_RET,       // 20
+    INST_HALT,      // 21
+    INST_LABEL,     // 22
+    INST_INVALID    // 23
 } INSTRUCTION_TYPE;
 
 extern bool error_flag;
