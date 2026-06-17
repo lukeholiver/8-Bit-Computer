@@ -1,0 +1,36 @@
+// load base into %r0 and exponent into %r1
+mov $02, %r0
+mov $03, %r1
+
+// call exponent function
+call exponent
+
+// end program
+halt
+
+// exponent label
+exponent:
+
+// push %r2 and %r3 (callee-save)
+push %r2
+push %r3
+
+// set up loop
+add $FE, %r1
+bnot %r1
+add $01, %r1
+mov %r0, %r2
+mov loop, %r3
+
+// multiplication loop
+loop:
+mul %r2, %r0
+add $01, %r1
+blez %r3, %r1
+
+// pop %r2 and %r3 then return
+pop %r3
+pop %r2
+ret
+
+
