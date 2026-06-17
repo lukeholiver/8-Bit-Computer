@@ -208,8 +208,6 @@ void value_check(OPERAND *operand){
 // // convert instruction to nibble
 char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination){
 
-    // big changes incoming
-
     switch(instruction->type){
     
         case INST_NEG:
