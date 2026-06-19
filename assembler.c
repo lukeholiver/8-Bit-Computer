@@ -256,9 +256,17 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
                 instruction->subcode = 0;
                 return "C";
             }
+            else if(source->type == IMMEDIATE && destination->type == MEM_REGISTER){
+                instruction->subcode = 2;
+                return "C";
+            }
             else if(source->type == MEM_IMMEDIATE && destination->type == REGISTER){
                 instruction->subcode = 3;
                 return "C";
+            }
+            else if(source->type == RSP && destination->type == REGISTER){
+                instruction->subcode = 3;
+                return "E";
             }
             else{   // error detected
                 error_flag = true;
@@ -354,10 +362,10 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
             instruction->subcode = 3;
             return "F";
 
-        case INST_INVALID: // invalid instruction stops program
-            return "F";    // error flag already set in init_instruction()
+        case INST_INVALID:  // invalid instruction stops program
+            return "F";     // error flag already set in init_instruction()
 
-        default: // so compiler doesn't have a stroke
+        default:            // so compiler doesn't have a stroke
             return "F";
     }   
 }
@@ -368,50 +376,54 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
     int rA = 0;
     int rB = 0;
 
-    // source: register, destination: register
+    // icode: 1,2,3,4,5,6,7,8,9
     if(source->type == REGISTER && destination->type == REGISTER){
         rA = destination->value;
         rB = source->value;
     }
 
-    // source: mem_register, destination: register
+    // icode: A
     else if(source->type == MEM_REGISTER && destination->type == REGISTER){
         rA = destination->value;
         rB = source->value;
     }
 
-    // source: register, destination: mem_register
+    // icode: B
     else if(source->type == REGISTER && destination->type == MEM_REGISTER){
         rA = source->value;
         rB = destination->value;
     }
 
-    // source: register, subcode
+    // icode 0 (B = 0,1,2), D, E (B = 0,2)
     else if(source->type == REGISTER && instruction->subcode >= 0){
         rA = source->value;
         rB = instruction->subcode;
     }
     
-    // destination: register, subcode
-    else if(destination->type == REGISTER && instruction->subcode >= 0){
+    // icode 0 (B = 3), C (B = 0,1,2,3), E (B = 3)
+    else if((destination->type == REGISTER || destination->type == MEM_REGISTER) && instruction->subcode >= 0){
         rA = destination->value;
         rB = instruction->subcode;
     }
-    
-    // no registers, subcode
-    else if(destination->type != REGISTER && source->type != REGISTER && instruction->subcode >= 0){
-        rA = 0;
+
+    // icode E (B = 1), F (B = 0,1)
+    else if(source->type == IMMEDIATE && destination->type == INVALID && instruction->subcode >= 0){
+        rA = 0;     // rA is not used for these instructions
         rB = instruction->subcode;
     }
 
-    // halt or ret
-    else{
-        // check for instructions with no operands
-        if(instruction->type != INST_HALT && instruction->type != INST_RET){
-            error_flag = true;
-        }
-        rA = 0;
+    // icode F (B = 2,3)
+    else if(source->type == INVALID && destination->type == INVALID && instruction->subcode >=0){
+        rA = 3;     // rA is not used for these instructions
         rB = instruction->subcode;
+    }
+
+    else{
+        error_flag = true;
+        
+        // set halt byte
+        rA = 3;
+        rB = 3;
     }
 
     char hex[] = "0123456789ABCDEF"; 
