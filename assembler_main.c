@@ -53,11 +53,12 @@ int main(int argc, char *argv[]){
         // init operand structs
         init_operands(&parsed, &source, &destination);
 
-        // check for label
+        // check for label, confirm no duplicates/overflow
         if(instruction.type == INST_LABEL){
-
-            // init label struct
-            init_label(&instruction);
+            if(!init_label(&instruction)){
+                fclose(file_ptr);
+                return 1;
+            }
             continue;
         }
 

@@ -91,6 +91,6 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
 
 void encode_immediate(OPERAND *source, OPERAND *destination, char *buff);
 
-void init_label(INSTRUCTION *instruction);
+bool init_label(INSTRUCTION *instruction);
 
 #endif

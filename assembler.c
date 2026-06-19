@@ -462,14 +462,31 @@ void encode_immediate(OPERAND *source, OPERAND *destination, char *buff){
 }
 
 // initalizes label struct
-void init_label(INSTRUCTION *instruction){
+bool init_label(INSTRUCTION *instruction){
+
+    // check for label buffer for overflow
+    if(label_index >= LABEL_BUFFER_SIZE){
+        fprintf(stderr, "Error: too many labels, limit is %d.\n", LABEL_BUFFER_SIZE);
+        return false;
+    }
 
     // copy label text and remove colon
-    strncpy(labels[label_index].txt, instruction->txt, sizeof(labels[label_index].txt));
-    labels[label_index].txt[strlen(labels[label_index].txt) - 1] = '\0';
+    char tmp[256];
+    strncpy(tmp, instruction->txt, sizeof(tmp));
+    tmp[strlen(tmp) - 1] = '\0';
 
+    // check for duplicate label
+    for(int i = 0; i < label_index; i++){
+        if(strcmp(labels[i].txt, tmp) == 0){
+            fprintf(stderr, "Error: duplicate label '%s'.\n", tmp);
+            return false;
+        }
+    }
+    
     // set label address and increment index
+    strncpy(labels[label_index].txt, tmp, sizeof(labels[label_index].txt));
     labels[label_index].address = address;
     label_index ++;
 
+    return true;
 }
