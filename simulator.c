@@ -114,11 +114,11 @@ void execute_instruction(CPU *cpu, uint8_t instruction){
             break;
 
         case 0x5:
-            cpu->rfile[rA] <<= (cpu->rfile[rB] & 0x07);
+            cpu->rfile[rA] <<= (cpu->rfile[rB] & 0x07); // max shift of 7 bits
             break;
 
         case 0x6:
-            cpu->rfile[rA] >>= (cpu->rfile[rB] & 0x07);
+            cpu->rfile[rA] >>= (cpu->rfile[rB] & 0x07); // max shift of 7 bits
             break;
 
         case 0x7:
@@ -154,7 +154,7 @@ void execute_instruction(CPU *cpu, uint8_t instruction){
                     break;
 
                 case 0x2:
-                    cpu->rfile[rA] &= cpu->memory[cpu->pc + 1];
+                    cpu->memory[cpu->rfile[rA]] = cpu->memory[cpu->pc + 1];
                     break;
 
                 case 0x3:
@@ -165,42 +165,98 @@ void execute_instruction(CPU *cpu, uint8_t instruction){
             break;
             
         case 0xD:
-            if((int8_t)cpu->rfile[rA] <= 0){
-                new_pc = cpu->rfile[rB];
+            
+            switch(rB){
+
+                case 0x0:
+                    if((int8_t)cpu->rfile[rA] > 0){
+                        new_pc = cpu->memory[cpu->pc + 1];
+                    }
+                    else{
+                        new_pc ++;
+                    }
+                    break;
+
+                case 0x1:
+                    if((int8_t)cpu->rfile[rA] < 0){
+                        new_pc = cpu->memory[cpu->pc + 1];
+                    }
+                    else{
+                        new_pc ++;
+                    }
+                    break;
+
+                case 0x2:
+                    if((int8_t)cpu->rfile[rA] == 0){
+                        new_pc = cpu->memory[cpu->pc + 1];
+                    }
+                    else{
+                        new_pc ++;
+                    }
+                    break;
+
+                case 0x3:
+                    if((int8_t)cpu->rfile[rA] != 0){
+                        new_pc = cpu->memory[cpu->pc + 1];
+                    }
+                    else{
+                        new_pc ++;
+                    }
+                    break;
             }
             break;
 
         case 0xE:
+
             switch(rB){
     
-                case 0x0:
+                case 0x0:   // push register
                     cpu->rsp --;
                     cpu->memory[cpu->rsp] = cpu->rfile[rA];
                     break;
 
-                case 0x1:
+                case 0x1:   // push immediate
+                    cpu->rsp --;
+                    cpu->memory[cpu->rsp] = cpu->memory[cpu->pc + 1];
+                    new_pc ++;
+                    break;
+
+                case 0x2:   // pop
                     cpu->rfile[rA] = cpu->memory[cpu->rsp];
                     cpu->rsp ++;
                     break;
 
-                case 0x2:
-                    cpu->rsp --;
-                    cpu->memory[cpu->rsp] = cpu->pc + 2;
-                    new_pc = cpu->memory[cpu->pc + 1];
-
-                    break;
-
-                case 0x3:
-                    new_pc = cpu->memory[cpu->rsp];
-                    cpu->rsp += 1;
+                case 0x03:
+                    cpu->rfile[rA] = cpu->rsp;
                     break;
             }
             break;
 
         case 0xF:
-            cpu->halt = true;
-            new_pc = cpu->pc;
-            break;
+
+            switch(rB){
+
+                case 0x0: // goto
+                    new_pc = cpu->memory[cpu->pc + 1];
+                    break;
+
+                case 0x1: // call 
+                    cpu->rsp --;
+                    cpu->memory[cpu->rsp] = cpu->pc + 2;
+                    new_pc = cpu->memory[cpu->pc + 1];
+                    break;
+
+                case 0x2: // return
+                    new_pc = cpu->memory[cpu->rsp];
+                    cpu->rsp += 1;
+                    break;
+
+                case 0x3: // halt
+                    cpu->halt = true;
+                    new_pc = cpu->pc;
+                    break;
+            }
+        break;        
     }
     cpu->pc = new_pc;
 }

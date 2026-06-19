@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define PROGRAM_BUFFER_SIZE 513
 #define LABEL_BUFFER_SIZE 257
