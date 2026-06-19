@@ -4,14 +4,14 @@ int main(int argc, char *argv[]){
 
     // confirm recieved file
     if(argc < 2){
-        printf("Please input ./a.out filename.txt");
+        fprintf(stderr, "Please input ./a.out filename.txt\n");
         return 1;
     }
 
     // open file
     FILE *file_ptr = fopen(argv[1], "r");
     if(file_ptr == NULL){
-        printf("File failed to open\n");
+        fprintf(stderr, "File failed to open\n");
         return 1;
     }
 
@@ -20,7 +20,12 @@ int main(int argc, char *argv[]){
     char line_copy[256];
     char ops_buff[2];
     char imm_buff[3];
+    char program_buffer[PROGRAM_BUFFER_SIZE] = {0};
+    char *cursor = program_buffer;  // used for snprintf
     int line_num = 0;
+    bool error_detected = false;
+
+    size_t remaining = sizeof(program_buffer);
 
     PARSED_LINE parsed;
     INSTRUCTION instruction;
@@ -57,13 +62,22 @@ int main(int argc, char *argv[]){
         }
 
         else if(instruction.type != INST_INVALID && instruction.type != INST_LABEL){
-            if(source.type == IMMEDIATE || source.type == MEM_IMMEDIATE || source.type == LABEL_ADDR){
+            if(source.type == IMMEDIATE || source.type == MEM_IMMEDIATE ||
+               source.type == LABEL_ADDR || destination.type == LABEL_ADDR ||
+               destination.type == IMMEDIATE){
                 address += 2;
             }
             else{
                 address += 1;
             }
         }
+    }
+
+    // check for overflow
+    if(address > 256){
+        fprintf(stderr, "Error: program requires %d bytes, exceeds 256 byte memory limit.\n", address);
+        fclose(file_ptr);
+        return 1;
     }
 
     // reset file pointer and error flag
@@ -102,20 +116,34 @@ int main(int argc, char *argv[]){
         // encode line
         char *inst_nibble = encode_instruction(&instruction, &source, &destination); // safe returning literals
         encode_operands(&instruction, &source, &destination, ops_buff);
-        encode_immediate(&source, imm_buff);
+        encode_immediate(&source, &destination, imm_buff);
+
+        // load bytes into program buffer
+        int written = snprintf(cursor, remaining, "%s%s%s", inst_nibble, ops_buff, imm_buff);
+        cursor += written;
+        remaining -= written;
 
         // error check
         if(error_flag){
             fprintf(stderr, "Error on line %d: %s\n", line_num, line);
-            fclose(file_ptr);
-            return 1;
+            error_detected = true;
+            error_flag = false;
         }
-        
-        // print byte(s) to stdout
-        printf("%s%s%s", inst_nibble, ops_buff, imm_buff);
+
     }
 
-    fclose(file_ptr);
+    // print to stdout
+    if(!error_detected){
+        printf("%s", program_buffer);
+    }
 
-    return 0;
+    // print to stderr
+    else{
+        fprintf(stderr, "Assembly failed, errors detected.\n");
+    }
+
+    // close and return
+    fclose(file_ptr);
+    return error_detected ? 1 : 0;
+
 }

@@ -6,7 +6,7 @@ bool error_flag = false;
 // 1st-pass-variables
 int address = 0;
 int label_index = 0;
-LABEL labels[256] = {0};
+LABEL labels[LABEL_BUFFER_SIZE] = {0};
 
 // splits an assembly line into tokens
 void parse(char *line, PARSED_LINE *parsed){
@@ -436,11 +436,20 @@ void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destina
 }
 
 // convert immediate to byte
-void encode_immediate(OPERAND *source, char *buff){
+void encode_immediate(OPERAND *source, OPERAND *destination, char *buff){
 
     if(source->type == IMMEDIATE || source->type == MEM_IMMEDIATE){
             if(source->value >= 0 && source->value <= 255){
                 snprintf(buff, 3, "%02X", source->value);
+            }
+            else{
+                error_flag = true;
+                buff[0] = '\0';
+            }
+    }
+    else if(destination->type == IMMEDIATE){
+            if(destination->value >= 0 && destination->value <= 255){
+                snprintf(buff, 3, "%02X", destination->value);
             }
             else{
                 error_flag = true;

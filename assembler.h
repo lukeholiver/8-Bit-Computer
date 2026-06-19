@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define PROGRAM_BUFFER_SIZE 513
+#define LABEL_BUFFER_SIZE 257
+
 typedef struct {
     char *instruction;
     char *source;
@@ -70,7 +73,7 @@ typedef enum {
 extern bool error_flag;
 extern int address;
 extern int label_index;
-extern LABEL labels[256];
+extern LABEL labels[LABEL_BUFFER_SIZE];
 
 void parse(char *line, PARSED_LINE *parsed);
 
@@ -86,7 +89,7 @@ char *encode_instruction(INSTRUCTION *instruction, OPERAND *source, OPERAND *des
 
 void encode_operands(INSTRUCTION *instruction, OPERAND *source, OPERAND *destination, char *buff);
 
-void encode_immediate(OPERAND *source, char *buff);
+void encode_immediate(OPERAND *source, OPERAND *destination, char *buff);
 
 void init_label(INSTRUCTION *instruction);
 
