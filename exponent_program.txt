@@ -9,16 +9,27 @@ halt
 // exponent function label
 exponent:
 
+// check for exponent = 0
+je %r1, zero
+
 // pre-loop housekeeping
 push %r2
 mov %r0, %r2
 add $FF, %r1
-neg %r1
 
 // multiplication loop
 loop:
-mul %r2, %r0
-add $01, %r1
-jlt %r1, loop
+jgt %r1, body
 pop %r2
+ret
+
+// body of loop
+body:
+mul %r2, %r0
+add $FF, %r1
+jmp loop
+
+// exponent = 0
+zero:
+mov $01, %r0
 ret
