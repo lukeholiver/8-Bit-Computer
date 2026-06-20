@@ -13,8 +13,7 @@ exponent:
 push %r2
 mov %r0, %r2
 add $FF, %r1
-bnot %r1
-add $01, %r1
+neg %r1
 
 // multiplication loop
 loop:
