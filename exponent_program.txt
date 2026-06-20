@@ -1,6 +1,6 @@
 // load base into %r0 and exponent into %r1
-mov $07, %r0
-mov $02, %r1
+mov $05, %r0
+mov $03, %r1
 
 // call exponent function then halt
 call exponent
