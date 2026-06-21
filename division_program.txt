@@ -1,0 +1,37 @@
+// load dividend into %r0 and divisor into %r1
+mov $16, %r0
+mov $04, %r1
+
+// call division function then halt
+call divide
+halt
+
+// division function label
+divide:
+
+// check for division by zero
+je %r1, div_by_zero
+
+// pre-loop housekeeping
+push %r2
+mov %r0, %r2
+mov $00, %r0
+
+// division loop
+loop:
+sub %r1, %r2
+jlt %r2, undo
+
+// commit: count this subtraction and loop again
+add $01, %r0
+jmp loop
+
+// undo the last (failed) subtraction, then return
+undo:
+add %r1, %r2
+pop %r2
+ret
+
+// division by zero error case
+div_by_zero:
+halt
