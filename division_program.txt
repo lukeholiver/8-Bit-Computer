@@ -13,7 +13,6 @@ divide:
 je %r1, div_by_zero
 
 // pre-loop housekeeping
-push %r2
 mov %r0, %r2
 mov $00, %r0
 
@@ -29,7 +28,6 @@ jmp loop
 // undo the last (failed) subtraction, then return
 undo:
 add %r1, %r2
-pop %r2
 ret
 
 // division by zero error case

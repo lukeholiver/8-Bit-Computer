@@ -1,0 +1,26 @@
+// load the byte to count into %r0, then call popcount and halt
+mov $B5, %r0
+call popcount
+halt
+
+// popcount function
+popcount:
+push %r3
+
+// set up: move the input into the working register, zero the count, load the constant 1
+mov %r0, %r1
+mov $00, %r0
+mov $01, %r2
+
+// while n != 0: add its low bit to the count, then shift n right by one
+loop:
+je %r1, done
+mov %r1, %r3
+and %r2, %r3
+add %r3, %r0
+shr %r2, %r1
+jmp loop
+
+done:
+pop %r3
+ret

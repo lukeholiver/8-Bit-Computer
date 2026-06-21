@@ -1,0 +1,84 @@
+// set up sorted array in memory starting at address 0xC0 (clear of program code, which ends near 0x58)
+// array values (indices 0-7): 3, 7, 12, 19, 25, 31, 40, 52
+// %r3 walks the address forward by 1 after each store
+mov $C0, %r3
+mov $03, (%r3)
+add $01, %r3
+mov $07, (%r3)
+add $01, %r3
+mov $0C, (%r3)
+add $01, %r3
+mov $13, (%r3)
+add $01, %r3
+mov $19, (%r3)
+add $01, %r3
+mov $1F, (%r3)
+add $01, %r3
+mov $28, (%r3)
+add $01, %r3
+mov $34, (%r3)
+
+// load search target into %r0, low bound into %r1, high bound into %r2
+mov $34, %r0
+mov $00, %r1
+mov $07, %r2
+
+// call binary_search function then halt
+call binary_search
+halt
+
+// binary_search function
+binary_search:
+
+push %r3
+
+// base case: if low > high, search space is exhausted
+mov %r1, %r3
+sub %r2, %r3
+jgt %r3, not_found
+
+// mid = (low + high) / 2, computed once and saved on the stack
+mov %r1, %r3
+add %r2, %r3
+push %r0
+mov $01, %r0
+shr %r0, %r3
+pop %r0
+push %r3
+
+// load M[mid] and compare against target
+add $C0, %r3
+mov (%r3), %r3
+sub %r0, %r3
+
+je %r3, found
+jlt %r3, search_right
+jgt %r3, search_left
+
+// M[mid] < target: search right half (low = mid + 1)
+search_right:
+pop %r3
+add $01, %r3
+mov %r3, %r1
+call binary_search
+jmp binary_search_return
+
+// M[mid] > target: search left half (high = mid - 1)
+search_left:
+pop %r3
+add $FF, %r3
+mov %r3, %r2
+call binary_search
+jmp binary_search_return
+
+found:
+pop %r0
+jmp binary_search_return
+
+not_found:
+mov $FF, %r0
+jmp binary_search_return
+
+binary_search_return:
+pop %r3
+ret

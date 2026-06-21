@@ -1,7 +1,7 @@
 // load base into %r0 and exponent into %r1
 mov $05, %r0
 mov $03, %r1
-mov $38, %r2
+mov $38, %r3
 
 // call exponent function then halt
 call exponent
@@ -14,19 +14,19 @@ exponent:
 je %r1, zero
 
 // pre-loop housekeeping
-push %r2
-mov %r0, %r2
+push %r3
+mov %r0, %r3
 add $FF, %r1
 
 // multiplication loop
 loop:
 jgt %r1, body
-pop %r2
+pop %r3
 ret
 
 // body of loop
 body:
-mul %r2, %r0
+mul %r3, %r0
 add $FF, %r1
 jmp loop
 
