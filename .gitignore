@@ -13,3 +13,7 @@ simulator
 # macOS metadata
 .DS_Store8-b8it computer.pdf
 .DS_Store
+
+# simulation outputs
+sim
+dump.vcd
