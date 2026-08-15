@@ -1,3 +1,5 @@
+`include "control_unit_defines.vh"
+
 module alu (
 
     input [3:0] sel,
@@ -17,18 +19,17 @@ module alu (
     always @(*) begin
         case(sel)
         
-            4'h0: result = -rA;
-            4'h1: result = ~rA;
-            4'h2: result = !rA;
-
-            4'h3: result = rA + rB;
-            4'h4: result = rA - rB;
-            4'h5: result = rA * rB;
-            4'h6: result = rA << (rB & 8'h07);
-            4'h7: result = rA >> (rB & 8'h07);
-            4'h8: result = rA & rB;
-            4'h9: result = rA | rB;
-            4'hA: result = rA ^ rB;
+            `NEG: result = -rA;
+            `BNOT: result = ~rA;
+            `LNOT: result = !rA;
+            `ADD: result = rA + rB;
+            `SUB: result = rA - rB;
+            `MUL: result = rA * rB;
+            `SHL: result = rA << (rB & 8'h07);
+            `SHR: result = rA >> (rB & 8'h07);
+            `AND: result = rA & rB;
+            `OR: result = rA | rB;
+            `XOR: result = rA ^ rB;
 
             default: result = 8'h00;
 
