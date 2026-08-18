@@ -4,6 +4,7 @@ module control_unit (
 
     input clk,
     input reset,
+    input reg [7:0] mem_pc,
 
     output reg [3:0] alu_sel,
     output reg [1:0] comp_sel,
@@ -17,37 +18,67 @@ module control_unit (
     output reg rsp_inc,
     output reg rsp_dec,
 
+    output reg [2:0] data_path
 );
 
     reg [5:0] state;
-    reg [3:0] data_path;
-
-
     reg [7:0] ir;
 
-    // state transistion logic
+    // state transistion logic - look at state and datapath rather than state and icode
     always @(posedge clk) begin
 
-    
-        case(state)
+        if(reset) begin
+            state <= `FETCH;
+        end
 
-            `FETCH:
-                ir <= mem_pc;
+        else begin
+            case(state)
 
-            `DECODE:
+                // read from memory at pc, latch IR
+                `FETCH: begin
+                    ir <= mem_pc;
+                    state <= `DECODE;
+                end
 
-            `EXECUTE:
+                // decode instruction, set selectors, choose next state
+                `DECODE: begin
 
-            `MEM1:
+                    case(data_path)
+                        `REG_ONLY: state <= `EXECUTE;
+                        `SMP_MOVE: state <= `WRITEBACK;
+                        `IMM_OP: state <= `MEM1;
+                        `MEM_MOVE: state <= `MEM1;
+                        `DBL_MEM: state <= `MEM1;   
+                        default: state <= `FETCH;       
+                    endcase
+                end
 
-            `MEM2:
+                // ALU / Comparator operations
+                `EXECUTE: state <= `WRITEBACK;
+                
 
-            `WRITEBACK:
+                // first memory access
+                `MEM1: begin
 
-        endcase
+                    case(data_path)
 
-        // look at state and datapath rather than state and icoe
+                        `IMM_OP: state <= `EXECUTE;
+                        `MEM_MOVE: state <= `WRITEBACK;
+                        `DBL_MEM: state <= `MEM2;
+                        default: state <= `FETCH;
+                    endcase
+                end
 
+                // second memory access
+                `MEM2: state <= `WRITEBACK;
+
+                // write values to registers/memory
+                `WRITEBACK: state <= `FETCH;
+
+                default: state <= `FETCH;
+
+            endcase
+        end
     end
 
     // instruction decoding and output/control logic
