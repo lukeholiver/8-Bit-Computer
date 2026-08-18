@@ -35,11 +35,22 @@
 `define JE      2'b10
 `define JNE     2'b11
 
-// SMP_MOVE selector
-`define SEL_PC      2'b00
-`define SEL_REG     2'b01
-`define SEL_RSP     2'b10
-`define SEL_NONE    2'b11
+// Register data in selector
+`define REG_SEL_PC          3'b000
+`define REG_SEL_REG         3'b001
+`define REG_SEL_RSP         3'b010
+`define REG_SEL_MEM_IMM     3'b011
+`define REG_SEL_MEM_SPC     3'b100
+`define REG_SEL_MEM_RSP     3'b101
+`define REG_SEL_ALU         3'b110
+`define REG_SEL_NONE        3'b111
+
+// Memory data in selector
+`define MEM_SEL_REG         2'b00
+`define MEM_SEL_IMM         2'b01
+`define MEM_SEL_PC2         2'b10
+`define MEM_SEL_NONE        2'b11
+
 
 // PC selector
 `define PC_SEL_1    2'b00   // normal instructions
