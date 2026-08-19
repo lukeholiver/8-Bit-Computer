@@ -51,11 +51,16 @@
 `define MEM_SEL_PC2         2'b10
 `define MEM_SEL_NONE        2'b11
 
-
 // PC selector
 `define PC_SEL_1    2'b00   // normal instructions
 `define PC_SEL_2    2'b01   // immediates
 `define PC_SEL_IMM  2'b10   // pc = imm
 `define PC_SEL_RSP  2'b11   // pc = rsp
+
+// Special address source selector
+`define SADDR_RA     2'b00   // icode 0xA
+`define SADDR_RB     2'b01   // icode 0xB
+`define SADDR_MEM   2'b10   // icode 0xC.3
+`define SADDR_NONE  2'b11
 
 `endif

@@ -4,25 +4,37 @@ module control_unit (
 
     input clk,
     input reset,
-    input reg [7:0] mem_pc,
+    input [7:0] mem_pc,
 
+    // sel signals
     output reg [3:0] alu_sel,
     output reg [1:0] comp_sel,
-
     output reg [2:0] reg_data_sel,
     output reg [1:0] mem_data_sel,
     output reg [1:0] pc_inc_sel,
+    output reg alu_source_sel,
+    output reg [1:0] special_addr_source_sel,
 
+    // enable signals
     output reg branch_gate_ena,
 
     output reg rsp_inc,
     output reg rsp_dec,
+    output reg rsp_write_ena,
 
-    output reg [2:0] data_path
+    output reg write_ena,
+    output reg special_write_ena,
+    
+    output reg pc_ena
+
 );
 
+    reg [2:0] data_path;
     reg [5:0] state;
     reg [7:0] ir;
+    reg rsp_dec_sel;
+    reg rsp_inc_sel;
+    reg memory_write_active;
 
     // state transistion logic - look at state and datapath rather than state and icode
     always @(posedge clk) begin
@@ -92,8 +104,10 @@ module control_unit (
         mem_data_sel = `MEM_SEL_NONE;
         pc_inc_sel = `PC_SEL_1;
         branch_gate_ena = 0;
-        rsp_dec = 0;
-        rsp_inc = 0;
+        rsp_dec_sel = 0;
+        rsp_inc_sel = 0;
+        alu_source_sel = 0;
+        special_addr_source_sel = `SADDR_NONE;
 
         case(ir[7:4])
 
@@ -116,15 +130,18 @@ module control_unit (
             4'h8: begin data_path = `REG_ONLY; alu_sel = `OR;  reg_data_sel = `REG_SEL_ALU; end
             4'h9: begin data_path = `REG_ONLY; alu_sel = `XOR; reg_data_sel = `REG_SEL_ALU; end
 
-            4'hA: begin data_path = `MEM_MOVE; reg_data_sel = `REG_SEL_MEM_SPC; end
-            4'hB: begin data_path = `MEM_MOVE; mem_data_sel = `MEM_SEL_REG; end
+            4'hA: begin data_path = `MEM_MOVE; reg_data_sel = `REG_SEL_MEM_SPC; special_addr_source_sel = `SADDR_RB; end
+            4'hB: begin data_path = `MEM_MOVE; mem_data_sel = `MEM_SEL_REG; special_addr_source_sel = `SADDR_RB; end
 
             4'hC: begin
                 case(ir[1:0])
                     2'b00: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_2; reg_data_sel = `REG_SEL_MEM_IMM; end
-                    2'b01: begin data_path = `IMM_OP; alu_sel = `ADD; pc_inc_sel = `PC_SEL_2; reg_data_sel = `REG_SEL_ALU; end
-                    2'b10: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_2; mem_data_sel = `MEM_SEL_IMM; end
-                    2'b11: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_2; reg_data_sel = `REG_SEL_MEM_SPC; end
+                    2'b01: begin data_path = `IMM_OP; alu_sel = `ADD; pc_inc_sel = `PC_SEL_2;
+                              reg_data_sel = `REG_SEL_ALU; alu_source_sel = 1; end
+                    2'b10: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_2;
+                              mem_data_sel = `MEM_SEL_IMM; special_addr_source_sel = `SADDR_RA; end
+                    2'b11: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_2;
+                              reg_data_sel = `REG_SEL_MEM_SPC; special_addr_source_sel = `SADDR_MEM; end
                 endcase
             end
 
@@ -140,9 +157,9 @@ module control_unit (
 
             4'hE: begin
                 case(ir[1:0])
-                    2'b00: begin data_path = `MEM_MOVE; mem_data_sel = `MEM_SEL_REG; rsp_dec = 1; end
-                    2'b01: begin data_path = `DBL_MEM;  mem_data_sel = `MEM_SEL_IMM; rsp_dec = 1; pc_inc_sel = `PC_SEL_2; end
-                    2'b10: begin data_path = `MEM_MOVE; reg_data_sel = `REG_SEL_MEM_RSP; rsp_inc = 1; end
+                    2'b00: begin data_path = `MEM_MOVE; mem_data_sel = `MEM_SEL_REG; rsp_dec_sel = 1; end
+                    2'b01: begin data_path = `DBL_MEM;  mem_data_sel = `MEM_SEL_IMM; rsp_dec_sel = 1; pc_inc_sel = `PC_SEL_2; end
+                    2'b10: begin data_path = `MEM_MOVE; reg_data_sel = `REG_SEL_MEM_RSP; rsp_inc_sel = 1; end
                     2'b11: begin data_path = `SMP_MOVE; reg_data_sel = `REG_SEL_RSP; end
                 endcase
             end
@@ -150,8 +167,8 @@ module control_unit (
             4'hF: begin
                 case(ir[1:0])
                     2'b00: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_IMM; end
-                    2'b01: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_IMM; mem_data_sel = `MEM_SEL_PC2; rsp_dec = 1; end
-                    2'b10: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_RSP; rsp_inc = 1; end
+                    2'b01: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_IMM; mem_data_sel = `MEM_SEL_PC2; rsp_dec_sel = 1; end
+                    2'b10: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_RSP; rsp_inc_sel = 1; end
                     2'b11: begin data_path = `SMP_MOVE; end
                 endcase
             end
@@ -161,5 +178,26 @@ module control_unit (
         endcase
     end
 
+    // enable signals/gating logic
+    always @(*) begin
+
+        rsp_dec = rsp_dec_sel && ((data_path == `MEM_MOVE && state == `MEM1) || 
+                                  (data_path == `DBL_MEM && state == `MEM2));
+
+        rsp_inc = rsp_inc_sel && (data_path == `MEM_MOVE && state == `MEM1);
+
+        write_ena = (state == `WRITEBACK) && (reg_data_sel != `REG_SEL_NONE);
+
+        memory_write_active = (mem_data_sel != `MEM_SEL_NONE) && 
+                             ((data_path == `MEM_MOVE && state == `MEM1) || 
+                              (data_path == `DBL_MEM && state == `MEM2));
+
+        special_write_ena = memory_write_active && !rsp_dec_sel;
+
+        rsp_write_ena = memory_write_active && rsp_dec_sel;
+    
+        pc_ena = (state == `WRITEBACK); // && (ir != 8'hFF);
+
+    end
 
 endmodule
