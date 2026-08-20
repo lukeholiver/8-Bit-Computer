@@ -12,7 +12,7 @@ module control_registers(
     output [7:0] pc_1_out,
     output [7:0] pc_2_out,
     output [7:0] rsp_out,
-    output [7:0] rsp_1_out
+    output [7:0] rsp_minus_1_out
 
 );
 
@@ -25,7 +25,7 @@ module control_registers(
     assign pc_1_out = pc + 1;
     assign pc_2_out = pc + 2;
     assign rsp_out = rsp;
-    assign rsp_1_out = rsp - 1;
+    assign rsp_minus_1_out = rsp - 1;
 
 
     // rsp logic

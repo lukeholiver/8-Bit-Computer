@@ -25,10 +25,10 @@ module control_unit (
     output reg write_ena,
     output reg special_write_ena,
     
-    output reg pc_ena
+    output reg pc_ena,
 
-    output [1:0] reg_addr_a;
-    output [1:0] reg_addr_b;
+    output [1:0] reg_addr_a,
+    output [1:0] reg_addr_b
 
 );
 
@@ -190,7 +190,7 @@ module control_unit (
         rsp_dec = rsp_dec_sel && ((data_path == `MEM_MOVE && state == `MEM1) || 
                                   (data_path == `DBL_MEM && state == `MEM2));
 
-        rsp_inc = rsp_inc_sel && (data_path == `MEM_MOVE && state == `MEM1);
+        rsp_inc = rsp_inc_sel && (data_path == `WRITEBACK);
 
         write_ena = (state == `WRITEBACK) && (reg_data_sel != `REG_SEL_NONE);
 

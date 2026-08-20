@@ -110,6 +110,15 @@ module cpu (
     end
 
     // rsp input mux
+    wire [7:0] rsp_minus_1_out;
+    reg [7:0] rsp_for_mem;
+
+    always @(*) begin
+        if(rsp_write_ena)
+            rsp_for_mem = rsp_minus_1_out;
+        else
+            rsp_for_mem = rsp_out;
+    end
 
 // module instantiations
 
@@ -161,13 +170,13 @@ module cpu (
         .pc_1_out   (pc_1_out),
         .pc_2_out   (pc_2_out),
         .rsp_out    (rsp_out),
-        .rsp_1_out  ()  // where does this go??? (forgot why I added this)
+        .rsp_minus_1_out  (rsp_minus_1_out)
     );
     
     memory memory (
         .clk                (clk),
         .pc                 (pc_out),
-        .rsp                (rsp_out),
+        .rsp                (rsp_for_mem),
         .special_write_ena  (special_write_ena),
         .rsp_write_ena      (rsp_write_ena),
         .special_addr       (special_addr),
