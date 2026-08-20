@@ -60,7 +60,7 @@
 // Special address source selector
 `define SADDR_RA     2'b00   // icode 0xA
 `define SADDR_RB     2'b01   // icode 0xB
-`define SADDR_MEM   2'b10   // icode 0xC.3
-`define SADDR_NONE  2'b11
+`define SADDR_MEM    2'b10   // icode 0xC.3
+`define SADDR_NONE   2'b11
 
 `endif

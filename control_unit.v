@@ -27,6 +27,9 @@ module control_unit (
     
     output reg pc_ena
 
+    output [1:0] reg_addr_a;
+    output [1:0] reg_addr_b;
+
 );
 
     reg [2:0] data_path;
@@ -35,6 +38,9 @@ module control_unit (
     reg rsp_dec_sel;
     reg rsp_inc_sel;
     reg memory_write_active;
+
+    assign reg_addr_a = ir[3:2];
+    assign reg_addr_b = ir[1:0];
 
     // state transistion logic - look at state and datapath rather than state and icode
     always @(posedge clk) begin
