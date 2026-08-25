@@ -22,16 +22,36 @@ module cpu (
     wire [7:0] data_out_2;    // rB
     wire [1:0] reg_addr_a;
     wire [1:0] reg_addr_b;
-    wire [7:0] reg_data_in;
-    wire [7:0] mem_data_in;
     wire [7:0] result;
 
-// muxes
+// mux wire declarations
 
-    // ALU B operand mux
     reg [7:0] B_operand;
     wire alu_source_sel;
 
+    wire [1:0] special_addr_source_sel;
+    reg [7:0] special_addr;
+
+    reg [7:0] reg_data_in;
+    wire [2:0] reg_data_sel;
+    wire [7:0] mem_spc;
+
+    reg [7:0] mem_data_in;
+    wire [1:0] mem_data_sel;
+
+    wire [1:0] pc_inc_sel;
+    reg [7:0] pc_in;
+    wire [7:0] pc_1_out;
+    wire [7:0] pc_2_out;
+    wire [7:0] mem_pc_plus;
+    wire [7:0] mem_rsp;
+    wire comp_out;
+    wire branch_gate_ena;
+
+    wire [7:0] rsp_minus_1_out;
+    reg [7:0] rsp_for_mem;
+
+    // ALU B operand mux
     always @(*) begin
         if(alu_source_sel)
             B_operand = mem_pc_plus;
@@ -40,9 +60,6 @@ module cpu (
     end
 
     // special address mux
-    wire [1:0] special_addr_source_sel;
-    reg [7:0] special_addr;
-
     always @(*) begin
         case(special_addr_source_sel)
             `SADDR_RA:      special_addr = data_out_1;
@@ -53,10 +70,6 @@ module cpu (
     end
 
     // register writeback mux 
-    reg [7:0] reg_data_in;
-    wire [2:0] reg_data_sel;
-    wire [7:0] mem_spc;
-
     always @(*) begin
         case(reg_data_sel)
             `REG_SEL_PC:        reg_data_in = pc_out;
@@ -72,28 +85,16 @@ module cpu (
     end
 
     // memory writeback mux
-    reg [7:0] mem_data_in;
-    wire [1:0] mem_data_sel;
-
-        always @(*) begin
-            case(mem_data_sel)
-                `MEM_SEL_REG:   mem_data_in = data_out_1;
-                `MEM_SEL_IMM:   mem_data_in = mem_pc_plus;
-                `MEM_SEL_PC2:   mem_data_in = pc_2_out;
-                `MEM_SEL_NONE:  mem_data_in =  8'h00;
-            endcase
+    always @(*) begin
+        case(mem_data_sel)
+            `MEM_SEL_REG:   mem_data_in = data_out_1;
+            `MEM_SEL_IMM:   mem_data_in = mem_pc_plus;
+            `MEM_SEL_PC2:   mem_data_in = pc_2_out;
+            `MEM_SEL_NONE:  mem_data_in =  8'h00;
+        endcase
     end
 
     // pc's data_in mux
-    wire [1:0] pc_inc_sel;
-    reg [7:0] pc_in;
-    wire [7:0] pc_1_out;
-    wire [7:0] pc_2_out;
-    wire [7:0] mem_pc_plus;
-    wire [7:0] mem_rsp;
-    wire comp_out;
-    wire branch_gate_ena;
-
     always @(*) begin
         if(branch_gate_ena && comp_out)
             pc_in = mem_pc_plus;
@@ -110,9 +111,6 @@ module cpu (
     end
 
     // rsp input mux
-    wire [7:0] rsp_minus_1_out;
-    reg [7:0] rsp_for_mem;
-
     always @(*) begin
         if(rsp_write_ena)
             rsp_for_mem = rsp_minus_1_out;

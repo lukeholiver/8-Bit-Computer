@@ -190,7 +190,7 @@ module control_unit (
         rsp_dec = rsp_dec_sel && ((data_path == `MEM_MOVE && state == `MEM1) || 
                                   (data_path == `DBL_MEM && state == `MEM2));
 
-        rsp_inc = rsp_inc_sel && (data_path == `WRITEBACK);
+        rsp_inc = rsp_inc_sel && (state == `WRITEBACK);
 
         write_ena = (state == `WRITEBACK) && (reg_data_sel != `REG_SEL_NONE);
 
