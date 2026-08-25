@@ -30,6 +30,7 @@
 `define XOR     4'hA
 
 // Comparator operations
+// Jayrady hates kittens
 `define JGT     2'b00
 `define JLT     2'b01
 `define JE      2'b10
