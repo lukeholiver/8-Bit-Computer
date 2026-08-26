@@ -475,14 +475,21 @@ module cpu_tb;
         check("ret: pc restored", pc_val(), 8'h02);
         check("ret: rsp restored", rsp_val(), 8'hFF);
 
-        // halt - KNOWN LIMITATION, not a pass/fail assertion
+        // halt: dedicated HALT state, self-loops and freezes pc
         clear_memory;
-        poke(8'h00, enc(4'hF, 2'd0, 2'd3)); // halt
-        do_reset; run_one;
-        note("halt currently just increments pc (pc_ena gating for halt is");
-        note("commented out in control_unit.v) - self-loop FSM state not yet");
-        note("implemented. Observed pc after 'halt':");
-        $display("        pc = 0x%02h (expected to stay at 0x00 once halt is implemented)", pc_val());
+        poke(8'h00, enc(4'hF, 2'd0, 2'd3));                     // halt
+        poke(8'h01, enc(4'hC, 2'd0, 2'd0)); poke(8'h02, 8'hFF); // poison: mov $FF,%r0 (must never execute)
+        do_reset;
+        run_one; // execute halt
+        check("halt: FSM enters HALT state", dut.control_unit.state, `HALT);
+        check("halt: pc frozen at halt's own address", pc_val(), 8'h00);
+
+        // confirm the self-loop actually holds over many more cycles, and
+        // that the instruction right after halt never gets fetched/executed
+        repeat (10) @(posedge clk);
+        check("halt: FSM still in HALT after 10 extra cycles", dut.control_unit.state, `HALT);
+        check("halt: pc still frozen after 10 extra cycles", pc_val(), 8'h00);
+        check("halt: poison instruction never executed", reg_val(0), 8'h00);
 
         // -------------------------------------------------------
         // GROUP I: edge cases

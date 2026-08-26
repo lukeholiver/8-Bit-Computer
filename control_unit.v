@@ -33,7 +33,7 @@ module control_unit (
 );
 
     reg [2:0] data_path;
-    reg [5:0] state;
+    reg [6:0] state;
     reg [7:0] ir;
     reg rsp_dec_sel;
     reg rsp_inc_sel;
@@ -66,7 +66,8 @@ module control_unit (
                         `SMP_MOVE: state <= `WRITEBACK;
                         `IMM_OP: state <= `MEM1;
                         `MEM_MOVE: state <= `MEM1;
-                        `DBL_MEM: state <= `MEM1;   
+                        `DBL_MEM: state <= `MEM1;  
+                        `HALT_OP: state <= `WRITEBACK; 
                         default: state <= `FETCH;       
                     endcase
                 end
@@ -91,7 +92,15 @@ module control_unit (
                 `MEM2: state <= `WRITEBACK;
 
                 // write values to registers/memory
-                `WRITEBACK: state <= `FETCH;
+                `WRITEBACK: begin
+                    case(data_path)
+                        `HALT_OP: state <= `HALT;
+                        default: state <= `FETCH;
+                    endcase
+                end
+
+                // dedicated halt state
+                `HALT: state <= `HALT;
 
                 default: state <= `FETCH;
 
@@ -175,7 +184,7 @@ module control_unit (
                     2'b00: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_IMM; end
                     2'b01: begin data_path = `DBL_MEM; pc_inc_sel = `PC_SEL_IMM; mem_data_sel = `MEM_SEL_PC2; rsp_dec_sel = 1; end
                     2'b10: begin data_path = `MEM_MOVE; pc_inc_sel = `PC_SEL_RSP; rsp_inc_sel = 1; end
-                    2'b11: begin data_path = `SMP_MOVE; end
+                    2'b11: begin data_path = `HALT_OP; end
                 endcase
             end
 
@@ -202,7 +211,7 @@ module control_unit (
 
         rsp_write_ena = memory_write_active && rsp_dec_sel;
     
-        pc_ena = (state == `WRITEBACK); // && (ir != 8'hFF);
+        pc_ena = (state == `WRITEBACK) && (data_path != `HALT_OP);
 
     end
 

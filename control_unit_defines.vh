@@ -7,14 +7,16 @@
 `define IMM_OP      3'b010
 `define MEM_MOVE    3'b011
 `define DBL_MEM     3'b100
+`define HALT_OP     3'b101
 
 // state definitions
-`define FETCH       6'b000001
-`define DECODE      6'b000010
-`define EXECUTE     6'b000100
-`define MEM1        6'b001000
-`define MEM2        6'b010000
-`define WRITEBACK   6'b100000
+`define FETCH       7'b0000001
+`define DECODE      7'b0000010
+`define EXECUTE     7'b0000100
+`define MEM1        7'b0001000
+`define MEM2        7'b0010000
+`define WRITEBACK   7'b0100000
+`define HALT        7'b1000000
 
 // ALU operations
 `define NEG     4'h0
