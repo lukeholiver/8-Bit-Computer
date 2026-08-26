@@ -4,6 +4,9 @@ A complete 8-bit computer, designed and implemented from first principles. The p
 
 Verilog FPGA implementation is underway on a Digilent Basys 3. New Verilog files and demos (including video of the board running) will be added once their implementation is complete.
 
+Update as of August 26, 2026: RTL implementation complete and verified against the C simulator across the full instruction set; 
+FPGA bring-up in progress.
+
 ---
 
 ## Architecture and Conventions
