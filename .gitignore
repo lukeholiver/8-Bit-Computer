@@ -21,3 +21,4 @@ dump.vcd
 # verilog testbench build artifacts
 cpu_tb
 cpu_tb.vcd
+cpu_run
