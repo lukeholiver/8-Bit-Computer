@@ -24,3 +24,4 @@ cpu_tb.vcd
 cpu_run
 baud_tick_generator_tb.vcd
 tb
+uart_rx_tb.vcd
