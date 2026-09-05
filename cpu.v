@@ -2,7 +2,11 @@
 
 module cpu (
     input clk,
-    input reset
+    input reset,
+
+    input load_ena,
+    input [7:0] load_addr,
+    input [7:0] load_data
 );
 
 // internal wires
@@ -50,6 +54,10 @@ module cpu (
 
     wire [7:0] rsp_minus_1_out;
     reg [7:0] rsp_for_mem;
+
+    wire l_or_s_ena;
+    wire [7:0] l_or_s_addr;
+    wire [7:0] load_data_in;
 
     // ALU B operand mux
     always @(*) begin
@@ -118,6 +126,13 @@ module cpu (
             rsp_for_mem = rsp_out;
     end
 
+    // memory write mux
+    
+    assign l_or_s_ena = special_write_ena || load_ena;
+    assign l_or_s_addr = (load_ena) ? load_addr : special_addr;
+    assign load_data_in = (load_ena) ? load_data : mem_data_in;
+
+
 // module instantiations
 
     control_unit control_unit (
@@ -175,10 +190,10 @@ module cpu (
         .clk                (clk),
         .pc                 (pc_out),
         .rsp                (rsp_for_mem),
-        .special_write_ena  (special_write_ena),
+        .special_write_ena  (l_or_s_ena),   // computed from memory mux
         .rsp_write_ena      (rsp_write_ena),
-        .special_addr       (special_addr),
-        .data_in            (mem_data_in),
+        .special_addr       (l_or_s_addr),  // computed from memory mux
+        .data_in            (load_data_in), // computed from memory mux
         .mem_pc             (mem_pc),
         .mem_pc_plus        (mem_pc_plus),
         .mem_rsp            (mem_rsp),
