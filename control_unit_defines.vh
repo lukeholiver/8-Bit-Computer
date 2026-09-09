@@ -66,4 +66,12 @@
 `define SADDR_MEM    2'b10   // icode 0xC.3
 `define SADDR_NONE   2'b11
 
+// Debug out selector
+`define REGISTER_0      3'b000
+`define REGISTER_1      3'b001
+`define REGISTER_2      3'b010
+`define REGISTER_3      3'b011
+`define REGISTER_PC     3'b100
+`define REGISTER_RSP    3'b101
+
 `endif

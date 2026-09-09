@@ -43,7 +43,10 @@ wire [7:0] data_byte;
 
         .load_ena   (load_ena),
         .load_addr  (load_addr),
-        .load_data  (data_byte)
+        .load_data  (data_byte),
+        
+        .debug_sel  (), // from switch
+        .debug_out  ()  // to 7 segment display
     );
 
 endmodule

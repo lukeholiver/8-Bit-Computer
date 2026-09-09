@@ -9,8 +9,9 @@ module registers(
     input [7:0] data_in,
 
     output [7:0] data_out_1,
-    output [7:0] data_out_2
+    output [7:0] data_out_2,
 
+    output [31:0] register_bus
 );
 
     // register file
@@ -35,5 +36,6 @@ module registers(
     // asynchronous read
     assign data_out_1 = reg_file[r1_addr];
     assign data_out_2 = reg_file[r2_addr];
+    assign register_bus = {reg_file[3], reg_file[2], reg_file[1], reg_file[0]};
 
 endmodule
