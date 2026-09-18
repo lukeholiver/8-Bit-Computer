@@ -1,11 +1,14 @@
 module top (
     input clk,
     input reset,
-    input rx
+    input rx,
+    input [2:0] sw,
+
+    output [6:0] seg,
+    output [3:0] an
 );
 
 // wires and regs
-wire cpu_reset;
 wire data_valid;
 wire [7:0] data_bus;
 
@@ -13,13 +16,14 @@ wire done;
 wire load_ena;
 wire [7:0] load_addr;
 wire [7:0] data_byte;
+wire [7:0] debug_out;
 
 // module instantiations
 
     uart_rx uart_rx(
         .clk        (clk),
         .reset      (reset),
-        .rx         (rx),       // will map to micro-usb port on board
+        .rx         (rx),
 
         .data_out   (data_bus),
         .data_valid (data_valid)
@@ -45,8 +49,18 @@ wire [7:0] data_byte;
         .load_addr  (load_addr),
         .load_data  (data_byte),
         
-        .debug_sel  (), // from switch
-        .debug_out  ()  // to 7 segment display
+        .debug_sel  (sw),
+        .debug_out  (debug_out)
+    );
+
+    display_mux display_mux(
+        .clk        (clk),
+        .reset      (reset || !done),
+        .debug_out  (debug_out),
+        .reg_sel    (sw),
+
+        .seg        (seg),
+        .an         (an)
     );
 
 endmodule
