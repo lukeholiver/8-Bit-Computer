@@ -1,5 +1,3 @@
-`include "control_unit_defines.vh"
-
 module display_mux(
     input clk,
     input reset, // open
