@@ -34,80 +34,82 @@ module uart_rx (
             byte_count <= 0;
             half_cycle_count <= 0;
             data_out <= 0;
+            restart <= 0;
+            data_valid <= 0;
         end
         else begin
             sync_ff_1 <= rx;        // recives asynch in
-            sync_ff_2 <= sync_ff_1; // recives synch in
-        end
+            sync_ff_2 <= sync_ff_1; // recives synch in            
 
-        // defaults
-        restart <= 0;
-        data_valid <= 0;
+            // defaults
+            restart <= 0;
+            data_valid <= 0;
 
-        // 4 state FSM
-        case(state)
+            // 4 state FSM
+            case(state)
 
-            // detect change from 1 (idle) to 0 (start bit)
-            `IDLE: begin
-                if(sync_ff_2 && !sync_ff_1)
-                    state <= `START; // start bit detected
-                else
-                    state <= `IDLE;
-            end
-
-            // detected bit change, wait half bit cycle
-            `START: begin
-                // we need to wait for 5209 cycles
-                if(half_cycle_count < ((TICKS_PER_BIT - 1) / 2)) begin
-                    state <= `START;
-                    half_cycle_count <= half_cycle_count + 1;
-                end
-
-                else begin
-                    if(!sync_ff_2) begin
-                        state <= `RECIEVE;
-                        half_cycle_count <= 0;
-                        restart <= 1;
-                    end
-                    else begin
+                // detect change from 1 (idle) to 0 (start bit)
+                `IDLE: begin
+                    if(sync_ff_2 && !sync_ff_1)
+                        state <= `START; // start bit detected
+                    else
                         state <= `IDLE;
-                    end
                 end
 
-            end
+                // detected bit change, wait half bit cycle
+                `START: begin
+                    // we need to wait for 5209 cycles
+                    if(half_cycle_count < ((TICKS_PER_BIT - 1) / 2)) begin
+                        state <= `START;
+                        half_cycle_count <= half_cycle_count + 1;
+                    end
 
-            // read 8 bits from sync_ff_2
-            `RECIEVE: begin
-
-                if(tick) begin
-
-                    if(byte_count < 8) begin
-                        data_out[byte_count] <= sync_ff_2;
-                        byte_count <= byte_count + 1;
-
-                        if(byte_count == 7) begin
-                            state <= `STOP;
-                            byte_count <= 0;
+                    else begin
+                        if(!sync_ff_2) begin
+                            state <= `RECIEVE;
+                            half_cycle_count <= 0;
+                            restart <= 1;
                         end
-                         
+                        else begin
+                            state <= `IDLE;
+                        end
+                    end
+
+                end
+
+                // read 8 bits from sync_ff_2
+                `RECIEVE: begin
+
+                    if(tick) begin
+
+                        if(byte_count < 8) begin
+                            data_out[byte_count] <= sync_ff_2;
+                            byte_count <= byte_count + 1;
+
+                            if(byte_count == 7) begin
+                                state <= `STOP;
+                                byte_count <= 0;
+                            end
+                            
+                        end
+                    end
+
+                    else begin
+                        state <= `RECIEVE;
                     end
                 end
 
-                else begin
-                    state <= `RECIEVE;
+                // Detect stop bit and send byte
+                `STOP: begin
+                    if(tick && sync_ff_2) begin
+                        state <= `IDLE;
+                        data_valid <= 1;
+                    end
+                    else    // could enter a loop if stop bit is never detected
+                        state <= `STOP;
                 end
-            end
-
-            // Detect stop bit and send byte
-            `STOP: begin
-                if(tick && sync_ff_2) begin
-                    state <= `IDLE;
-                    data_valid <= 1;
-                end
-                else    // could enter a loop if stop bit is never detected
-                    state <= `STOP;
-            end
-        endcase
+            endcase
+        end
     end
 
     // module instantiations
