@@ -8,7 +8,7 @@ Update as of August 26, 2026: RTL implementation complete and verified against t
 
 Update as of September 7th, 2026: UART wrapper module implemention completed and verified with testbenches. I/O mapping in progress in prepration for synthesis.
 
-FPGA bring-up in progress.
+Update as of October 6th, 2026: Synthesis complete! UART loading, 7-segment display, register cycling all working on real hardware. Example programs below cross referenced between the C simulator and FPGA, all resulting in expected output. 
 
 ---
 
