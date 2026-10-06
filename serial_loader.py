@@ -25,7 +25,7 @@ if(len(program_bytes) > 256):
 padded_program = program_bytes.ljust(256, b'\x00')
 
 # open serial port at COM3 for windows
-with serial.Serial('COM3', 9600, parity=serial.PARITY_NONE) as ser:
+with serial.Serial('COM4', 9600, parity=serial.PARITY_NONE) as ser:
 
     # write the program
     sent = ser.write(padded_program)
