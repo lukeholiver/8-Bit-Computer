@@ -9,7 +9,7 @@ module cpu (
     input [7:0] load_data,
 
     input [2:0] debug_sel,
-    output [7:0] debug_out
+    output reg [7:0] debug_out
 );
 
 // internal wires
