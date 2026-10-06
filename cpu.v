@@ -6,7 +6,10 @@ module cpu (
 
     input load_ena,
     input [7:0] load_addr,
-    input [7:0] load_data
+    input [7:0] load_data,
+
+    input [2:0] debug_sel,
+    output [7:0] debug_out
 );
 
 // internal wires
@@ -58,6 +61,8 @@ module cpu (
     wire l_or_s_ena;
     wire [7:0] l_or_s_addr;
     wire [7:0] load_data_in;
+
+    wire [31:0] register_bus;
 
     // ALU B operand mux
     always @(*) begin
@@ -132,6 +137,21 @@ module cpu (
     assign l_or_s_addr = (load_ena) ? load_addr : special_addr;
     assign load_data_in = (load_ena) ? load_data : mem_data_in;
 
+    // debug_out selector mux
+
+    always @(*) begin
+        case(debug_sel)
+            `REGISTER_0: debug_out = register_bus[7:0];
+            `REGISTER_1: debug_out = register_bus[15:8];
+            `REGISTER_2: debug_out = register_bus[23:16];
+            `REGISTER_3: debug_out = register_bus[31:24];
+            `REGISTER_PC: debug_out = pc_out;
+            `REGISTER_RSP: debug_out = rsp_out;
+            default: debug_out = register_bus[7:0]; // displays r0 as default
+        endcase
+
+    end
+
 
 // module instantiations
 
@@ -169,7 +189,9 @@ module cpu (
         .write_addr     (reg_addr_a),
         .data_in        (reg_data_in),
         .data_out_1     (data_out_1),
-        .data_out_2     (data_out_2)
+        .data_out_2     (data_out_2),
+
+        .register_bus   (register_bus)
     );
 
     control_registers control_registers (
