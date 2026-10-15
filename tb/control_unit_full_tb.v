@@ -47,13 +47,15 @@ module control_unit_full_tb;
     always #5 clk = ~clk;
 
     initial begin
-        $dumpfile("dump.vcd");
+        $dumpfile("control_unit_full_tb.vcd");
         $dumpvars(0, control_unit_full_tb);
     end
 
     // steps one clock edge, then checks FSM state plus every enable signal in one shot
+    // argument order after state: write_ena, special_write_ena, rsp_write_ena,
+    //                             rsp_inc, rsp_dec, pc_ena, branch_gate_ena
     task check_step;
-        input [5:0] exp_state;
+        input [6:0] exp_state;
         input exp_write_ena;
         input exp_special_write_ena;
         input exp_rsp_write_ena;
@@ -126,6 +128,12 @@ module control_unit_full_tb;
 
         @(posedge clk);
         #1;
+        if (uut.state !== `FETCH) begin
+            $display("  FAIL[reset]: state expected %b got %b", `FETCH, uut.state);
+            errors = errors + 1;
+        end
+        else
+            $display("PASS: reset -> FETCH");
         reset = 0;
 
         // =========================================================
@@ -159,7 +167,7 @@ module control_unit_full_tb;
         // =========================================================
         @(negedge clk);
         mem_pc = 8'hD0;
-        check_step(`DECODE,   0,0,0,0,0,0,1, "jgt: FETCH->DECODE (branch_gate_ena asserts as soon as ir latches)");
+        check_step(`DECODE,    0,0,0,0,0,0,1, "jgt: FETCH->DECODE (branch_gate_ena asserts as soon as ir latches)");
         check_step(`MEM1,      0,0,0,0,0,0,1, "jgt: DECODE->MEM1 (branch_gate_ena)");
         check_step(`EXECUTE,   0,0,0,0,0,0,1, "jgt: MEM1->EXECUTE (branch_gate_ena)");
         check_step(`WRITEBACK, 0,0,0,0,0,1,1, "jgt: EXECUTE->WRITEBACK (pc_ena, no write_ena, branch_gate_ena)");
@@ -230,14 +238,12 @@ module control_unit_full_tb;
 
         // =========================================================
         // 12) pop %rA: 0xE.2  -> F D M1 W
-        //     rsp_inc fires at MEM1; write_ena fires later at WRITEBACK
-        //     NOTE: see write-up after this file regarding a possible
-        //     ordering issue between rsp_inc (MEM1) and the register
-        //     write reading mem_rsp (WRITEBACK) - flagged separately.
+        //     rsp_inc fires at WRITEBACK, alongside write_ena, so the
+        //     register latches M[rsp] before rsp moves
         // =========================================================
         start_instruction(8'hE2, "pop");
-        check_step(`MEM1,      0,0,0,1,0,0,0, "pop: DECODE->MEM1 (rsp_inc)");
-        check_step(`WRITEBACK, 1,0,0,0,0,1,0, "pop: MEM1->WRITEBACK (write_ena+pc_ena)");
+        check_step(`MEM1,      0,0,0,0,0,0,0, "pop: DECODE->MEM1");
+        check_step(`WRITEBACK, 1,0,0,1,0,1,0, "pop: MEM1->WRITEBACK (write_ena+rsp_inc+pc_ena)");
         check_step(`FETCH,     0,0,0,0,0,0,0, "pop: WRITEBACK->FETCH");
 
         // =========================================================
@@ -268,21 +274,42 @@ module control_unit_full_tb;
 
         // =========================================================
         // 16) ret: 0xF.2  -> F D M1 W
-        //     rsp_inc fires at MEM1; ret never writes a register
+        //     rsp_inc fires at WRITEBACK alongside pc_ena, so pc loads
+        //     M[rsp] before rsp moves; ret never writes a register
         // =========================================================
         start_instruction(8'hF2, "ret");
-        check_step(`MEM1,      0,0,0,1,0,0,0, "ret: DECODE->MEM1 (rsp_inc)");
-        check_step(`WRITEBACK, 0,0,0,0,0,1,0, "ret: MEM1->WRITEBACK (pc_ena only)");
+        check_step(`MEM1,      0,0,0,0,0,0,0, "ret: DECODE->MEM1");
+        check_step(`WRITEBACK, 0,0,0,1,0,1,0, "ret: MEM1->WRITEBACK (rsp_inc+pc_ena)");
         check_step(`FETCH,     0,0,0,0,0,0,0, "ret: WRITEBACK->FETCH");
 
         // =========================================================
-        // 17) halt: 0xF.3  -> F D W
-        //     halt handling not yet implemented - this documents
-        //     CURRENT (pre-halt-fix) behavior: pc_ena still fires normally
+        // 17) halt: 0xF.3  -> F D W HALT (stays)
+        //     pc_ena is gated off so pc stays on the halt instruction;
+        //     the FSM parks in HALT until reset
         // =========================================================
         start_instruction(8'hF3, "halt");
-        check_step(`WRITEBACK, 0,0,0,0,0,1,0, "halt: DECODE->WRITEBACK (pc_ena, no write_ena) [pre-halt-fix]");
-        check_step(`FETCH,     0,0,0,0,0,0,0, "halt: WRITEBACK->FETCH [pre-halt-fix]");
+        check_step(`WRITEBACK, 0,0,0,0,0,0,0, "halt: DECODE->WRITEBACK (no pc_ena, no write_ena)");
+        check_step(`HALT,      0,0,0,0,0,0,0, "halt: WRITEBACK->HALT");
+
+        // change mem_pc while halted - ir only latches in FETCH, so this must have no effect
+        @(negedge clk);
+        mem_pc = 8'h20;
+        check_step(`HALT,      0,0,0,0,0,0,0, "halt: holds in HALT (cycle 1, mem_pc changed)");
+        check_step(`HALT,      0,0,0,0,0,0,0, "halt: holds in HALT (cycle 2)");
+        check_step(`HALT,      0,0,0,0,0,0,0, "halt: holds in HALT (cycle 3)");
+
+        // =========================================================
+        // 18) reset out of HALT -> FETCH, then normal execution resumes
+        // =========================================================
+        @(negedge clk);
+        reset = 1;
+        check_step(`FETCH,     0,0,0,0,0,0,0, "reset: HALT->FETCH");
+        reset = 0;
+
+        start_instruction(8'h20, "add after reset");
+        check_step(`EXECUTE,   0,0,0,0,0,0,0, "add after reset: DECODE->EXECUTE");
+        check_step(`WRITEBACK, 1,0,0,0,0,1,0, "add after reset: EXECUTE->WRITEBACK (write_ena+pc_ena)");
+        check_step(`FETCH,     0,0,0,0,0,0,0, "add after reset: WRITEBACK->FETCH");
 
         // ---- summary ----
         if (errors == 0)

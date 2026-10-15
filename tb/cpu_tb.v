@@ -12,9 +12,20 @@ module cpu_tb;
     // ---------------------------------------------------------------
     // DUT
     // ---------------------------------------------------------------
+    wire [7:0] debug_out;   // unused here - registers are read hierarchically
+
     cpu dut (
-        .clk    (clk),
-        .reset  (reset)
+        .clk        (clk),
+        .reset      (reset),
+
+        // UART load path held idle: programs are poked into memory directly
+        .load_ena   (1'b0),
+        .load_addr  (8'h00),
+        .load_data  (8'h00),
+
+        // display mux not used in simulation
+        .debug_sel  (3'b000),
+        .debug_out  (debug_out)
     );
 
     // clock: 10ns period
@@ -37,8 +48,9 @@ module cpu_tb;
     endfunction
 
     // ---------------------------------------------------------------
-    // Memory setup helpers (hierarchical pokes - testbench only, not
-    // meant to model UART loading; that's a separate future milestone)
+    // Memory setup helpers. These hierarchical pokes deliberately
+    // bypass the UART load path so each test can place exact bytes at
+    // exact addresses. UART loading is verified separately in top_tb.
     // ---------------------------------------------------------------
     task clear_memory;
         integer j;
@@ -57,13 +69,15 @@ module cpu_tb;
     endtask
 
     // ---------------------------------------------------------------
-    // Reset
+    // Reset: hold for two rising edges, release on a negedge so the
+    // DUT never samples reset changing on the same edge
     // ---------------------------------------------------------------
     task do_reset;
         begin
             reset = 1;
             @(posedge clk);
             @(posedge clk);
+            @(negedge clk);
             reset = 0;
         end
     endtask
@@ -72,7 +86,9 @@ module cpu_tb;
     // Run exactly one instruction to completion.
     // Waits for the FSM to reach WRITEBACK, then advances one more
     // edge so the writeback (register/memory/pc/rsp update) commits
-    // and the FSM returns to FETCH. Watchdog guards against hangs.
+    // and the FSM returns to FETCH. Every sample happens #1 after a
+    // posedge, once nonblocking updates have settled. Watchdog guards
+    // against hangs.
     // ---------------------------------------------------------------
     task run_one;
         integer timeout;
@@ -80,6 +96,7 @@ module cpu_tb;
             timeout = 0;
             while (dut.control_unit.state !== `WRITEBACK && timeout < 50) begin
                 @(posedge clk);
+                #1;
                 timeout = timeout + 1;
             end
             if (timeout >= 50) begin
@@ -87,6 +104,7 @@ module cpu_tb;
                 $finish;
             end
             @(posedge clk); // commit writeback, FSM returns to FETCH
+            #1;
         end
     endtask
 
@@ -487,6 +505,7 @@ module cpu_tb;
         // confirm the self-loop actually holds over many more cycles, and
         // that the instruction right after halt never gets fetched/executed
         repeat (10) @(posedge clk);
+        #1;
         check("halt: FSM still in HALT after 10 extra cycles", dut.control_unit.state, `HALT);
         check("halt: pc still frozen after 10 extra cycles", pc_val(), 8'h00);
         check("halt: poison instruction never executed", reg_val(0), 8'h00);
