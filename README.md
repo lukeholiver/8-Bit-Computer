@@ -1,14 +1,8 @@
 # 8-Bit Computer
 
-A complete 8-bit computer, designed and implemented from first principles. The project spans the entire stack: a custom instruction set architecture, an assembly language, a two-pass assembler with label resolution, and an instruction-level simulator written in C. I built every layer from scratch, without tutorials or reference implementations, making the architectural and encoding decisions myself at each step. Together these pieces demonstrate computer architecture, instruction-set design, and low-level systems programming as one cohesive, working system.
+A complete 8-bit computer, designed and implemented from first principles. The project spans the entire stack: a custom instruction set architecture, an assembly language, a two-pass assembler with label resolution, an instruction-level simulator written in C, Verilog RTL implementation, and synthesis on a Basys 3 FPGA with UART program loading. I built every layer from scratch, without tutorials or reference implementations, making the architectural and encoding decisions myself at each step. Together these pieces demonstrate computer architecture, instruction-set design, and low-level systems programming as one cohesive, working system.
 
-Verilog FPGA implementation is underway on a Digilent Basys 3. New Verilog files and demos (including video of the board running) will be added once their implementation is complete.
-
-Update as of August 26, 2026: RTL implementation complete and verified against the C simulator across the full instruction set.
-
-Update as of September 7th, 2026: UART wrapper module implemention completed and verified with testbenches. I/O mapping in progress in prepration for synthesis.
-
-Update as of October 6th, 2026: Synthesis complete! UART loading, 7-segment display, register cycling all working on real hardware. Example programs below cross referenced between the C simulator and FPGA, all resulting in expected output. 
+Completed: verified in simulation and on hardware
 
 ---
 
