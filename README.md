@@ -244,10 +244,43 @@ halt: true
 
 ## Hardware Implementation
 
-Control Unit FSM
-UART program loader
-Board I/O
-Resource Utilization
+### Control Unit FSM
+
+A seven state FSM organizes the control signals logic and dataflow. Depending on the datapath, unused states will be skipped to increase speed.
+
+<img src="docs/images/fsm.png" alt="Control unit FSM state diagram" width="600">
+
+|   State   |        Action        |
+|-----------|----------------------|
+| Fetch     | load IR from M[pc]   |
+| Decode    | split IR field       |
+| Execute   | ALU op/combine       | 
+| Mem1      | first read/write     |
+| Mem2      | second memory access |
+| Writeback | commit result        |
+| Halt      | ends the program     |
+
+| Data Path |                  State Sequence                  |
+|-----------|--------------------------------------------------|
+| REG_ONLY  | Fetch -> Decode -> Execute -> Writeback          |
+| SMP_MOVE  | Fetch -> Decode -> Writeback                     |
+| IMM_OP    | Fetch -> Decode -> MEM1 -> Execute -> Writeback  |
+| MEM_MOVE  | Fetch -> Decode -> MEM1 -> Writeback             |
+| DBL_MEM   | Fetch -> Decode -> MEM1 -> MEM2 -> Writeback     |
+| HALT_OP   | Fetch -> Decode -> Writeback -> Halt             |
+
+Some examples:
+mov %r1, %r0      Fetch -> Decode -> Writeback
+push $10          Fetch -> Decode -> Mem1 -> Mem2 -> Writeback
+add $05, %r2      Fetch -> Decode -> Mem1 -> Execute -> Writeback
+
+Once the stop instruction is read, the FSM will enter the Halt state where the CPU cannot increment
+
+### UART program loader
+
+### Board I/O
+
+### Resource Utilization
 
 ---
 
