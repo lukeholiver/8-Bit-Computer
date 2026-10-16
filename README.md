@@ -10,17 +10,17 @@ Demo video will go here
 
 ---
 
-## Repository Structure
+## Table of Contents
 
--[Demo](#demo)
--[Architecture and Convention](#architecture-and-conventions)
--[Instruction Set and Assembly](#instruction-set-and-assembly)
--[Worked Example](#worked-example)
--[Hardware Implementation](#hardware-implementation)
--[Building and Running](#building-and-running)
--[Verification](#verification)
--[Example Programs]()
--[Future Work]() 
+- [Demo](#demo)
+- [Architecture and Convention](#architecture-and-conventions)
+- [Instruction Set and Assembly](#instruction-set-and-assembly)
+- [Worked Example](#worked-example)
+- [Hardware Implementation](#hardware-implementation)
+- [Building and Running](#building-and-running)
+- [Verification](#verification)
+- [Example Programs](#example-programs)
+- [Future Work](#future-work) 
 
 ---
 
