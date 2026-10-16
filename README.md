@@ -156,7 +156,7 @@ Syntax errors (incorrect formatting, operands, instructions, etc.) are displayed
 
 ---
 
-## Worked Example: Exponent Function
+## Worked Example
 
 Below is an example exponential program to demonstrate various features of my architecture. It computes base^exponent with base in `%r0` and exponent in `%r1`. My function supports the exponent = 0 edge case.
 
