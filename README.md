@@ -246,35 +246,36 @@ halt: true
 
 ### Control Unit FSM
 
-A seven state FSM organizes the control signals logic and dataflow. Depending on the datapath, unused states will be skipped to increase speed.
+A seven-state one-hot encoded FSM with variable cycles per instruction organizes the control signal logic and dataflow.
+
 
 <img src="docs/images/fsm.png" alt="Control unit FSM state diagram" width="600">
 
-|   State   |        Action        |
-|-----------|----------------------|
-| Fetch     | load IR from M[pc]   |
-| Decode    | split IR field       |
-| Execute   | ALU op/combine       | 
-| Mem1      | first read/write     |
-| Mem2      | second memory access |
-| Writeback | commit result        |
-| Halt      | ends the program     |
 
-| Data Path |                  State Sequence                  |
-|-----------|--------------------------------------------------|
-| REG_ONLY  | Fetch -> Decode -> Execute -> Writeback          |
-| SMP_MOVE  | Fetch -> Decode -> Writeback                     |
-| IMM_OP    | Fetch -> Decode -> MEM1 -> Execute -> Writeback  |
-| MEM_MOVE  | Fetch -> Decode -> MEM1 -> Writeback             |
-| DBL_MEM   | Fetch -> Decode -> MEM1 -> MEM2 -> Writeback     |
-| HALT_OP   | Fetch -> Decode -> Writeback -> Halt             |
+|    State    |                    Action                    | 
+|-------------|----------------------------------------------|
+| `Fetch`     | load IR from M[pc]                           |
+| `Decode`    | FSM selects next state based on datapath     |
+| `Execute`   | ALU or the comparator evaluates              | 
+| `Mem1`      | read/write for `IMM_OP`, `MEM_MOVE`, and `DBL_MEM` |
+| `Mem2`      | second memory access for `DBL_MEM`             |
+| `Writeback` | commits register, pc, and rsp writes         |
+| `Halt`      | holds until reset                            |
 
-Some examples:
-mov %r1, %r0      Fetch -> Decode -> Writeback
-push $10          Fetch -> Decode -> Mem1 -> Mem2 -> Writeback
-add $05, %r2      Fetch -> Decode -> Mem1 -> Execute -> Writeback
+|  Data Path  |                  State Sequence                  |                             Instructions                             |
+|-------------|--------------------------------------------------|----------------------------------------------------------------------|
+| `REG_ONLY`  | `Fetch` -> `Decode` -> `Execute` -> `Writeback`          | `neg`, `bnot`, `lnot`, `add`, `sub`, `mul`, `shl`, `shr`, `and`, `or`, `xor`             | 
+| `SMP_MOVE`  | `Fetch` -> `Decode` -> `Writeback`                     | `mov %rB,%rA`, `mov pc,%rA`, `mov rsp,%rA`                               |
+| `IMM_OP`    | `Fetch` -> `Decode` -> `Mem1` -> `Execute` -> `Writeback`  | `add $imm,%rA`, `jgt`, `jlt`, `je`, `jne`                                    |
+| `MEM_MOVE`  | `Fetch` -> `Decode` -> `Mem1` -> `Writeback`             | `mov (%rB),%rA`, `mov %rA,(%rB)`, `mov $imm,%rA`, `push %rA`, `pop`, `jmp`, `ret`|
+| `DBL_MEM`   | `Fetch` -> `Decode` -> `Mem1` -> `Mem2` -> `Writeback`     | `mov $imm,(%rA)`, `mov ($imm),%rA`, `push $imm`, `call`                    |
+| `HALT_OP`   | `Fetch` -> `Decode` -> `Writeback` -> `Halt`             | `halt`                                                               |
 
-Once the stop instruction is read, the FSM will enter the Halt state where the CPU cannot increment
+Instructions are grouped into datapaths by which states they need, not by operand type. For example, `mov $imm,%rA` is MEM_MOVE while `add $imm,%rA` is IMM_OP, because the add also needs Execute.
+
+Branch instructions need Execute because that is where the comparator evaluates, after Mem1 fetches the target address.
+
+Once the halt instruction is read, the FSM will enter the Halt state. The Halt state puts the FSM in a loop, preventing access to other states; `pc_ena` is held low, freezing the PC. Reset forces the FSM to Fetch from any state (see Board I/O).
 
 ### UART program loader
 
