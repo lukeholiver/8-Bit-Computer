@@ -2,7 +2,25 @@
 
 A complete 8-bit computer, designed and implemented from first principles. The project spans the entire stack: a custom instruction set architecture, an assembly language, a two-pass assembler with label resolution, an instruction-level simulator written in C, Verilog RTL implementation, and synthesis on a Basys 3 FPGA with UART program loading. I built every layer from scratch, without tutorials or reference implementations, making the architectural and encoding decisions myself at each step. Together these pieces demonstrate computer architecture, instruction-set design, and low-level systems programming as one cohesive, working system.
 
-Completed: verified in simulation and on hardware
+---
+
+## Demo
+
+Demo video will go here
+
+---
+
+## Repository Structure
+
+-[Demo](#demo)
+-[Architecture and Convention](#architecture-and-conventions)
+-[Instruction Set and Assembly](#instruction-set-and-assembly)
+-[Worked Example](#worked-example)
+-[Hardware Implementation](#hardware-implementation)
+-[Building and Running](#building-and-running)
+-[Verification](#verification)
+-[Example Programs]()
+-[Future Work]() 
 
 ---
 
@@ -75,6 +93,66 @@ Additionally, for the assembly instructions that use labels, replacing the label
 ### Error Catching
 
 Syntax errors (incorrect formatting, operands, instructions, etc.) are displayed in stderr with the corresponding line number. Comments and blank lines are included in line number counts for error reporting.
+
+---
+## Instruction Set and Assembly
+
+### Icode Table
+
+| icode | Operation | Description |
+|-------|-----------|-------------|
+| `0x0` (`0000`) | B-dependent: `0` rA = -rA; `1` rA = ~rA; `2` rA = !rA; `3` rA = pc | `0` Negate rA; `1` Bitwise negate rA; `2` Not rA; `3` Load pc into rA |
+| `0x1` (`0001`) | rA = rB | Set rA equal to rB |
+| `0x2` (`0010`) | rA += rB | Add registers rA and rB; store in rA |
+| `0x3` (`0011`) | rA -= rB | Subtract registers rA and rB; store in rA |
+| `0x4` (`0100`) | rA *= rB | Multiply register rA by rB; store in rA. For overflow, lower 8 bits stored in rA |
+| `0x5` (`0101`) | rA <<= rB | Left shift rA by rB; store in rA. Only lower 3 bits of rB are used |
+| `0x6` (`0110`) | rA >>= rB | Right shift rA by rB; store in rA. Only lower 3 bits of rB are used |
+| `0x7` (`0111`) | rA &= rB | Bitwise AND rA and rB; store in rA |
+| `0x8` (`1000`) | rA \|= rB | Bitwise OR rA and rB; store in rA |
+| `0x9` (`1001`) | rA ^= rB | Bitwise XOR rA and rB; store in rA |
+| `0xA` (`1010`) | rA = M[rB] | Set rA equal to memory at the address stored in rB |
+| `0xB` (`1011`) | M[rB] = rA | Set memory at the address stored in rB to rA |
+| `0xC` (`1100`) | B-dependent (then pc + 2): `0` rA = M[pc+1]; `1` rA += M[pc+1]; `2` M[rA] = M[pc+1]; `3` rA = M[M[pc+1]] | `0` Load the immediate byte into rA; `1` Add value in memory at pc+1 to rA; `2` Load the immediate byte into the address stored in rA; `3` Use the byte after the instruction as a memory address, load the value stored there into rA |
+| `0xD` (`1101`) | B-dependent (rA treated as signed): `0` if rA > 0: pc = M[pc+1] else pc+2; `1` if rA < 0: pc = M[pc+1] else pc+2; `2` if rA = 0: pc = M[pc+1] else pc+2; `3` if rA != 0: pc = M[pc+1] else pc+2 | `0` if rA > 0, jump to address at pc+1, else increment pc by 2; `1` if rA < 0, jump to address at pc+1, else increment pc by 2; `2` if rA = 0, jump to address at pc+1, else increment pc by 2; `3` if rA != 0, jump to address at pc+1, else increment pc by 2 |
+| `0xE` (`1110`) | B-dependent: `0` rsp -= 1, M[rsp] = rA; `1` rsp -= 1, M[rsp] = M[pc+1], pc+2; `2` rA = M[rsp], rsp += 1; `3` rA = rsp | `0` Push value in rA to the top of the stack; `1` Push value in the immediate byte to the top of the stack; `2` Pop the top stack value into rA; `3` Load rsp into rA |
+| `0xF` (`1111`) | B-dependent: `0` pc = M[pc+1]; `1` rsp -= 1, M[rsp] = pc+2, pc = M[pc+1]; `2` pc = M[rsp], rsp += 1; `3` Halt | `0` Unconditional jump to address stored in the immediate byte; `1` Call a function; `2` Return from a function; `3` Ends program, sets the `halt` flag to true |
+
+### Assembly Language
+
+| Assembly | Syntax | Operation | icode | Valid Registers |
+|----------|--------|-----------|-------|-----------------|
+| neg | `neg %rA` | rA = -rA | `0x0` | rA |
+| bnot | `bnot %rA` | rA = ~rA | `0x0` | rA |
+| lnot | `lnot %rA` | rA = !rA | `0x0` | rA |
+| mov | `mov pc, %rA` | rA = pc | `0x0` | rA |
+| mov | `mov %rB, %rA` | rA = rB | `0x1` | rA, rB |
+| add | `add %rB, %rA` | rA += rB | `0x2` | rA, rB |
+| sub | `sub %rB, %rA` | rA -= rB | `0x3` | rA, rB |
+| mul | `mul %rB, %rA` | rA *= rB | `0x4` | rA, rB |
+| shl | `shl %rB, %rA` | rA <<= rB | `0x5` | rA, rB |
+| shr | `shr %rB, %rA` | rA >>= rB | `0x6` | rA, rB |
+| and | `and %rB, %rA` | rA &= rB | `0x7` | rA, rB |
+| or | `or %rB, %rA` | rA \|= rB | `0x8` | rA, rB |
+| xor | `xor %rB, %rA` | rA ^= rB | `0x9` | rA, rB |
+| mov | `mov (%rB), %rA` | rA = M[rB] | `0xA` | rA, rB |
+| mov | `mov %rA, (%rB)` | M[rB] = rA | `0xB` | rA, rB |
+| mov | `mov $imm, %rA` | rA = M[pc + 1] | `0xC` | rA |
+| add | `add $imm, %rA` | rA += M[pc + 1] | `0xC` | rA |
+| mov | `mov $imm, (%rA)` | M[rA] = M[pc + 1] | `0xC` | rA |
+| mov | `mov ($imm), %rA` | rA = M[M[pc + 1]] | `0xC` | rA |
+| jgt | `jgt %rA, label` | if rA > 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
+| jlt | `jlt %rA, label` | if rA < 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
+| je | `je %rA, label` | if rA = 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
+| jne | `jne %rA, label` | if rA != 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
+| push | `push %rA` | rsp -= 1; M[rsp] = rA | `0xE` | rA |
+| push | `push $imm` | rsp -= 1; M[rsp] = M[pc + 1]; pc + 2 | `0xE` | none |
+| pop | `pop %rA` | rA = M[rsp]; rsp += 1 | `0xE` | rA |
+| mov | `mov rsp, %rA` | rA = rsp; pc + 1 | `0xE` | rA |
+| jmp | `jmp label` | pc = M[pc + 1] | `0xF` | none |
+| call | `call label` | rsp -= 1; M[rsp] = pc + 2; pc = M[pc + 1] | `0xF` | none |
+| ret | `ret` | pc = M[rsp]; rsp += 1 | `0xF` | none |
+| halt | `halt` | Halt | `0xF` | none |
 
 ---
 
@@ -164,68 +242,16 @@ halt: true
 
 ---
 
-## Icode and Assembly Tables
+## Hardware Implementation
 
-### Icode Table
-
-| icode | Operation | Description |
-|-------|-----------|-------------|
-| `0x0` (`0000`) | B-dependent: `0` rA = -rA; `1` rA = ~rA; `2` rA = !rA; `3` rA = pc | `0` Negate rA; `1` Bitwise negate rA; `2` Not rA; `3` Load pc into rA |
-| `0x1` (`0001`) | rA = rB | Set rA equal to rB |
-| `0x2` (`0010`) | rA += rB | Add registers rA and rB; store in rA |
-| `0x3` (`0011`) | rA -= rB | Subtract registers rA and rB; store in rA |
-| `0x4` (`0100`) | rA *= rB | Multiply register rA by rB; store in rA. For overflow, lower 8 bits stored in rA |
-| `0x5` (`0101`) | rA <<= rB | Left shift rA by rB; store in rA. Only lower 3 bits of rB are used |
-| `0x6` (`0110`) | rA >>= rB | Right shift rA by rB; store in rA. Only lower 3 bits of rB are used |
-| `0x7` (`0111`) | rA &= rB | Bitwise AND rA and rB; store in rA |
-| `0x8` (`1000`) | rA \|= rB | Bitwise OR rA and rB; store in rA |
-| `0x9` (`1001`) | rA ^= rB | Bitwise XOR rA and rB; store in rA |
-| `0xA` (`1010`) | rA = M[rB] | Set rA equal to memory at the address stored in rB |
-| `0xB` (`1011`) | M[rB] = rA | Set memory at the address stored in rB to rA |
-| `0xC` (`1100`) | B-dependent (then pc + 2): `0` rA = M[pc+1]; `1` rA += M[pc+1]; `2` M[rA] = M[pc+1]; `3` rA = M[M[pc+1]] | `0` Load the immediate byte into rA; `1` Add value in memory at pc+1 to rA; `2` Load the immediate byte into the address stored in rA; `3` Use the byte after the instruction as a memory address, load the value stored there into rA |
-| `0xD` (`1101`) | B-dependent (rA treated as signed): `0` if rA > 0: pc = M[pc+1] else pc+2; `1` if rA < 0: pc = M[pc+1] else pc+2; `2` if rA = 0: pc = M[pc+1] else pc+2; `3` if rA != 0: pc = M[pc+1] else pc+2 | `0` if rA > 0, jump to address at pc+1, else increment pc by 2; `1` if rA < 0, jump to address at pc+1, else increment pc by 2; `2` if rA = 0, jump to address at pc+1, else increment pc by 2; `3` if rA != 0, jump to address at pc+1, else increment pc by 2 |
-| `0xE` (`1110`) | B-dependent: `0` rsp -= 1, M[rsp] = rA; `1` rsp -= 1, M[rsp] = M[pc+1], pc+2; `2` rA = M[rsp], rsp += 1; `3` rA = rsp | `0` Push value in rA to the top of the stack; `1` Push value in the immediate byte to the top of the stack; `2` Pop the top stack value into rA; `3` Load rsp into rA |
-| `0xF` (`1111`) | B-dependent: `0` pc = M[pc+1]; `1` rsp -= 1, M[rsp] = pc+2, pc = M[pc+1]; `2` pc = M[rsp], rsp += 1; `3` Halt | `0` Unconditional jump to address stored in the immediate byte; `1` Call a function; `2` Return from a function; `3` Ends program, sets the `halt` flag to true |
-
-### Assembly Language
-
-| Assembly | Syntax | Operation | icode | Valid Registers |
-|----------|--------|-----------|-------|-----------------|
-| neg | `neg %rA` | rA = -rA | `0x0` | rA |
-| bnot | `bnot %rA` | rA = ~rA | `0x0` | rA |
-| lnot | `lnot %rA` | rA = !rA | `0x0` | rA |
-| mov | `mov pc, %rA` | rA = pc | `0x0` | rA |
-| mov | `mov %rB, %rA` | rA = rB | `0x1` | rA, rB |
-| add | `add %rB, %rA` | rA += rB | `0x2` | rA, rB |
-| sub | `sub %rB, %rA` | rA -= rB | `0x3` | rA, rB |
-| mul | `mul %rB, %rA` | rA *= rB | `0x4` | rA, rB |
-| shl | `shl %rB, %rA` | rA <<= rB | `0x5` | rA, rB |
-| shr | `shr %rB, %rA` | rA >>= rB | `0x6` | rA, rB |
-| and | `and %rB, %rA` | rA &= rB | `0x7` | rA, rB |
-| or | `or %rB, %rA` | rA \|= rB | `0x8` | rA, rB |
-| xor | `xor %rB, %rA` | rA ^= rB | `0x9` | rA, rB |
-| mov | `mov (%rB), %rA` | rA = M[rB] | `0xA` | rA, rB |
-| mov | `mov %rA, (%rB)` | M[rB] = rA | `0xB` | rA, rB |
-| mov | `mov $imm, %rA` | rA = M[pc + 1] | `0xC` | rA |
-| add | `add $imm, %rA` | rA += M[pc + 1] | `0xC` | rA |
-| mov | `mov $imm, (%rA)` | M[rA] = M[pc + 1] | `0xC` | rA |
-| mov | `mov ($imm), %rA` | rA = M[M[pc + 1]] | `0xC` | rA |
-| jgt | `jgt %rA, label` | if rA > 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
-| jlt | `jlt %rA, label` | if rA < 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
-| je | `je %rA, label` | if rA = 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
-| jne | `jne %rA, label` | if rA != 0: pc = M[pc + 1] else pc + 2 | `0xD` | rA |
-| push | `push %rA` | rsp -= 1; M[rsp] = rA | `0xE` | rA |
-| push | `push $imm` | rsp -= 1; M[rsp] = M[pc + 1]; pc + 2 | `0xE` | none |
-| pop | `pop %rA` | rA = M[rsp]; rsp += 1 | `0xE` | rA |
-| mov | `mov rsp, %rA` | rA = rsp; pc + 1 | `0xE` | rA |
-| jmp | `jmp label` | pc = M[pc + 1] | `0xF` | none |
-| call | `call label` | rsp -= 1; M[rsp] = pc + 2; pc = M[pc + 1] | `0xF` | none |
-| ret | `ret` | pc = M[rsp]; rsp += 1 | `0xF` | none |
-| halt | `halt` | Halt | `0xF` | none |
+Control Unit FSM
+UART program loader
+Board I/O
+Resource Utilization
 
 ---
 
-## Build Instructions
+## Building and Running
 
 There are a few ways to build and run the program. Here is the easiest:
 
@@ -244,6 +270,14 @@ There are a few ways to build and run the program. Here is the easiest:
 
 ---
 
+## Verification
+
+testbenches
+testing methodology
+cross referencing
+
+---
+
 ## Example Programs
 
 Other than the exponent program used for the worked example, this repo has three other example programs. The notes below explain how to use each program.
@@ -259,3 +293,9 @@ The binary search program initializes a sorted array of 8 values in memory. The 
 ### Population Count
 
 The population count program tallies the number of set bits (bits that are 1) within a byte. The input byte is stored in `%r0` (line 2), then the function returns the number of set bits.
+
+---
+
+## Future Work
+
+idek bruh
