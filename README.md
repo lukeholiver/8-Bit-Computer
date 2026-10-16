@@ -279,9 +279,15 @@ Once the halt instruction is read, the FSM will enter the Halt state. The Halt s
 
 ### UART program loader
 
+TODO
+
 ### Board I/O
 
+TODO
+
 ### Resource Utilization
+
+TODO
 
 ---
 
@@ -306,9 +312,7 @@ There are a few ways to build and run the program. Here is the easiest:
 
 ## Verification
 
-testbenches
-testing methodology
-cross referencing
+TODO
 
 ---
 
@@ -332,4 +336,4 @@ The population count program tallies the number of set bits (bits that are 1) wi
 
 ## Future Work
 
-idek bruh
+TODO
