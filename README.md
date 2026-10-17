@@ -279,7 +279,9 @@ Once the halt instruction is read, the FSM will enter the Halt state. The Halt s
 
 ### UART program loader
 
-TODO
+
+   <img src="docs/images/uart_loader.png" alt="UART program loader block diagram" width="600">
+
 
 ### Board I/O
 
