@@ -301,7 +301,28 @@ Notes:
 
 ### Board I/O
 
-TODO
+See `Basys-3-Master.xdc` located in `constraints/`.
+
+|   Board Element    |   Signal    |            Function             |
+|--------------------|-------------|---------------------------------|
+| SW0-SW2            | `sw[2:0]`   | Register select for the display |
+| BTNC               | `reset`     | Resets all modules              |
+| Micro-USB          | `rx`        | Program input at 9600 baud     |
+| 7-seg display      | `seg`, `an` | Shows the selected register     |
+| 100 MHz Oscillator | `clk`       | System clock                    |
+
+SW0-SW2 select which register to display on the 7-segment display.
+
+|  `sw[2:0]`  |   Displays   |
+|-------------|--------------|
+| `000`-`011` | r0-r3        |
+| `100`       | pc           |
+| `101`       | rsp          |
+| `110`,`111` | r0 (default) |
+
+The display has 4 digits. The leftmost digit displays the register index (decimal value of `sw[2:0]`), while the two right digits display the register value in hex. The register index and value are separated by a dash. See the [Demo](#demo) for reference.
+
+BTNC resets all modules; it does not rerun the loaded program. After reset, the CPU will remain in reset until a new 256-byte program arrives over UART.
 
 ### Resource Utilization
 
