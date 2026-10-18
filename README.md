@@ -277,11 +277,27 @@ Branch instructions need Execute because that is where the comparator evaluates,
 
 Once the halt instruction is read, the FSM will enter the Halt state. The Halt state puts the FSM in a loop, preventing access to other states; `pc_ena` is held low, freezing the PC. Reset forces the FSM to Fetch from any state (see Board I/O).
 
-### UART program loader
+### UART Program Loader
 
 
    <img src="docs/images/uart_loader.png" alt="UART program loader block diagram" width="600">
 
+
+#### Loading Protocol
+Data is sent over UART at a baud rate of 9600. The data format is 8N1 (8 data bits, no parity, 1 stop bit) and exactly 256 bytes are sent. Unused program bytes are zero-padded by the host, removing the need for a length header or end marker. `load_addr` acts as both a byte counter and address for loading new bytes into memory. The CPU and display are held in reset by `reset || !done`. `done` rises in the same cycle as the final write. Since the CPU's first fetch is from address 0, it never observes unloaded memory. During loading, `load_ena` takes over memory's special-address write port (the same port used by store instructions like `mov %rA, (%rb)`), substituting `load_addr` and `load_data` for the CPU's address and data.
+
+#### UART FSM
+
+|    State    |                    Action                    | 
+|-------------|----------------------------------------------|
+| `Idle`      | Waits for a falling edge on `rx`, from UART idle (1) to the start bit (0) |
+| `Start`     | Counts half a bit period with a local counter, then samples the synchronized line. If it's still 0, it restarts the baud tick generator so later ticks land mid-bit, then transitions to `Receive`. Otherwise it was a glitch, and the FSM returns to `Idle` |
+| `Receive`   | Reads a bit from the synchronizer at each tick and loads it into register LSB first by index (`data_out[byte_count]`), transitioning to `Stop` after reading 8 bits. Each sample lands mid-bit due to the half-bit alignment in `Start` |
+| `Stop`      | At the next tick where the synchronized line is high, pulses `data_valid` to high for 1 cycle, sends the byte to the loader, and sets the FSM to `Idle` |
+
+Notes: 
+- `TICKS_PER_BIT` = 10417 ≈ (100 MHz / 9600 baud). Rounding error is under 0.01% per bit, which is far inside UART's tolerance.
+- A two-flop synchronizer synchronizes the asynchronous `rx` input to the 100 MHz clock domain, guarding against metastability.
 
 ### Board I/O
 
