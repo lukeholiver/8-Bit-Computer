@@ -326,7 +326,23 @@ BTNC resets all modules; it does not rerun the loaded program. After reset, the 
 
 ### Resource Utilization
 
-TODO
+
+<img src="docs/images/layout.png" alt="Placed design with the critical path highlighted" width="400">
+
+
+| Resource | Used | Available |   %   |
+|----------|------|-----------|-------|
+| LUT      | 591  | 20,800    | 2.84  |
+| LUTRAM   | 192  | 9,600     | 2.00  |
+| FF       | 145  | 41,600    | 0.35  |
+| IO       | 17   | 106       | 16.04 |
+| BUFG     | 1    | 32        | 3.13  |
+
+Target Device: Artix-7 XC7A35T on the Basys 3
+
+Timing closes at 100 MHz with 0.007 ns of setup slack, 0.21 ns of hold slack, and no failing endpoints. The critical path appears to run from the PC through an asynchronous LUTRAM read of the immediate byte, the ALU's B-operand mux, and the multiplier's cascaded carry chains into the register file. No instruction actually uses that combination (there is no `mul $imm`), but timing analysis can't know that.
+
+The memory is LUTRAM due to four asynchronous read ports (`mem_pc`, `mem_pc_plus`, `mem_rsp`, `mem_spc`), which block RAM can't provide (its reads are synchronous, with at most two ports), so Vivado built it from distributed RAM replicated per read port.
 
 ---
 
