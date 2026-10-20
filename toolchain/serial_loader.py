@@ -1,11 +1,13 @@
 import sys
 import serial
 
+PORT = 'COM4'
+
 program_str = sys.stdin.read().strip()
 
-# invaid program
+# invalid program
 if not program_str:
-    print("Error: invalid program", file=sys.stderr)
+    print("Error: no program received", file=sys.stderr)
     sys.exit(1)
 
 # convert program to bytes
@@ -24,8 +26,8 @@ if(len(program_bytes) > 256):
 # create byte padding
 padded_program = program_bytes.ljust(256, b'\x00')
 
-# open serial port at COM3 for windows
-with serial.Serial('COM4', 9600, parity=serial.PARITY_NONE) as ser:
+# open serial port at PORT
+with serial.Serial(PORT, 9600, parity=serial.PARITY_NONE) as ser:
 
     # write the program
     sent = ser.write(padded_program)

@@ -348,20 +348,41 @@ The memory is LUTRAM due to four asynchronous read ports (`mem_pc`, `mem_pc_plus
 
 ## Building and Running
 
-There are a few ways to build and run the program. Here is the easiest:
+### C Simulator
 
-1. Place an assembler program in a `.txt` file (in the same folder as the `.c` files).
-2. Use the command `make all` to compile the assembler and simulator.
-3. Use the command `./assembler program.txt | ./simulator` to run the assembler and pipe its output to the simulator.
-   - `program.txt` just needs to be a `.txt` file; it can be named anything.
-4. Output is printed to stdout.
+1. Clone the repository and place it in a convenient location
+2. Run `make -C toolchain` to build the assembler/simulator
+3. Use the command `toolchain/assembler programs/example_program.txt | toolchain/simulator` to assemble and pipe a program to the simulator
+   - `example_program.txt` just needs to be a `.txt` file; it can be named anything
+4. Output is printed to stdout and errors to stderr
 
 **Other useful commands**
 
-- `make clean` removes all builds
-- `make assembler` or `make simulator` builds the assembler or simulator respectively
-- To run the assembler by itself, use `./assembler program.txt`
-- `ctrl c` ends the program if it enters an infinite loop
+- `make -C toolchain clean` removes build files
+- `make -C toolchain assembler` or `make -C toolchain simulator` builds the assembler or simulator respectively
+- To run the assembler by itself, use `toolchain/assembler programs/<name>.txt`
+- `Ctrl+C` ends the program if it enters an infinite loop
+
+### FPGA
+
+Vivado doesn't run on macOS, so I use a VM to send programs over UART. I would assemble a program on my mac, then copy the hex string to a terminal running on the Windows VM. The assembler uses `strsep`, which is a BSD/glibc function that MSVC and MinGW don't provide. Windows users should use WSL to build these programs.
+
+1. Prerequisites: Basys 3 FPGA, Vivado, Python3, and `pip install pyserial`
+2. Open Vivado's hardware manager and program the FPGA with the pre-built `.bit` file
+   - After programming, the board should display a dash on the rightmost 7 segment display 
+3. Use `toolchain/assembler programs/<name>.txt` to assemble a program into a hex string
+4. Open command prompt on windows, cd into `toolchain/`
+5. Run `echo long_string_of_hex_bytes| python serial_loader.py`
+   - `serial_loader.py` uses a hardcoded COM port found on line `28`; check device manager 
+6. Flip the switches `sw[2:0]` to read the register values
+7. To run another program press `reset` (BTNC) and repeat from step 3 with a different program
+
+**Troubleshooting**
+
+- Check that `serial_loader.py` uses the correct COM port
+- Check the terminal displays `Sent 256 bytes` after running the python script
+- Ensure the COM port isn't busy
+- Ensure that pyserial and port drivers are installed
 
 ---
 
