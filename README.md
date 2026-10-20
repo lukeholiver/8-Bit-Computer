@@ -368,7 +368,7 @@ The memory is LUTRAM due to four asynchronous read ports (`mem_pc`, `mem_pc_plus
 Vivado doesn't run on macOS, so I use a VM to send programs over UART. I would assemble a program on my mac, then copy the hex string to a terminal running on the Windows VM. The assembler uses `strsep`, which is a BSD/glibc function that MSVC and MinGW don't provide. Windows users should use WSL to build these programs.
 
 1. Prerequisites: Basys 3 FPGA, Vivado, Python3, and `pip install pyserial`
-2. Open Vivado's hardware manager and program the FPGA with the pre-built `.bit` file
+2. Open Vivado's hardware manager and program the FPGA with the pre-built `bitstream/top.bit` file
    - After programming, the board should display a dash on the rightmost 7 segment display 
 3. Use `toolchain/assembler programs/<name>.txt` to assemble a program into a hex string
 4. Open command prompt on windows, cd into `toolchain/`
