@@ -388,7 +388,50 @@ Vivado doesn't run on macOS, so I use a VM to send programs over UART. I would a
 
 ## Verification
 
-TODO
+**Unit Testbenches**
+
+|     Testbench Name       |                  Testing Goal                   |
+|--------------------------|-------------------------------------------------|
+| `alu_tb`                 | Check all ALU operations and overflow behavior  |
+| `comparator_tb`          | Compare multiple values with every compare instruction |
+| `registers_tb`           | Write values to registers, test reset functionality |
+| `control_registers_tb`   | Reset behavior, `pc` and `rsp` overflow, increment/decrement |
+| `memory_tb`              | Initialize memory, check combinational reads, confirm `rsp` and `special_addr` writes |
+| `control_unit_tb`        | Decode every instruction variant and test relevant selector/enable signals |
+| `control_unit_full_tb`   | Check state sequence and enable gating per instruction, including halt and reset |
+| `baud_tick_generator_tb` | Ticks arrive one bit period apart; restart resets the counter |
+| `uart_rx_tb`             | Load byte through 8N1 protocol, check reset and false start prevention |
+| `io_tb`                  | Test 7-segment display with 0.5 s counter |
+
+**Integration Testbenches**
+
+|     Testbench Name       |                  Testing Goal                   |
+|--------------------------|-------------------------------------------------|
+| `cpu_tb`                 | Every instruction on the integrated CPU, including edge cases (wraparound, mul truncation, shift masking, rsp and pc wrapping, halt) |
+| `top_tb`                 | A real assembled program sent through the simulated `rx` pin, with final registers checked against the C simulator |
+
+**Hardware cross-check** 
+
+Example programs on the Basys 3:
+- `exponent_program`
+- `exponent_program` (with overflow)
+- `binary_search_program`
+- `division_program`
+- `population_count_program`
+
+Each program's final register state (r0-r3, pc, rsp), read from the 7-segment display, matched the C simulator's output exactly. This includes exponent overflow inputs, where the result wraps modulo 256. See the Example Programs section below for function inputs.
+
+**Run Command**
+
+Run from the repo root to execute every testbench in `tb/`; results print to the terminal.
+
+```bash
+cd tb
+for f in *_tb.v; do
+    name="${f%.v}"
+    iverilog -g2012 -I ../rtl -s "$name" -o "$name.out" "$f" ../rtl/*.v && vvp "$name.out"
+done
+```
 
 ---
 
@@ -412,4 +455,8 @@ The population count program tallies the number of set bits (bits that are 1) wi
 
 ## Future Work
 
-TODO
+- Pipelining - The variable-CPI FSM leaves throughput on the table.
+- Critical path - Break the immediate → multiplier false path, either by constraining it or restructuring it, to gain timing margin.
+- UART robustness - Add framing-error detection in Stop, and have the loader ignore bytes after done.
+- Formal verification harness.
+- Loader script - Take the serial port as an argument instead of hardcoding it.
