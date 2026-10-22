@@ -6,7 +6,7 @@ A complete 8-bit computer, designed and implemented from first principles. The p
 
 ## Demo
 
-Demo video will go here
+[![Demo video](docs/images/demo_thumbnail.png)](https://youtu.be/8-q2EBVmtao)
 
 ---
 
