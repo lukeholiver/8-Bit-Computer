@@ -2,9 +2,11 @@
 
 A complete 8-bit computer, designed and implemented from first principles. The project spans the entire stack: a custom instruction set architecture, an assembly language, a two-pass assembler with label resolution, an instruction-level simulator written in C, Verilog RTL implementation, and synthesis on a Basys 3 FPGA with UART program loading. I built every layer from scratch, without tutorials or reference implementations, making the architectural and encoding decisions myself at each step. Together these pieces demonstrate computer architecture, instruction-set design, and low-level systems programming as one cohesive, working system.
 
+<img src="docs/images/FPGA_GIF.gif" alt="8-bit CPU running on the Basys 3, switching between registers" width="600">
+
 ---
 
-## Demo
+## Demo Video
 
 [![Demo video](docs/images/demo_thumbnail.png)](https://youtu.be/8-q2EBVmtao)
 
